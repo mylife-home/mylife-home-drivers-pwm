@@ -1,3 +1,5 @@
+// https://github.com/ant9000/soft_pwm/blob/master/soft_pwm.c
+// https://github.com/sarfata/pi-blaster/blob/master/pi-blaster.c
 
 #include <linux/kernel.h>
 #include <linux/module.h>
