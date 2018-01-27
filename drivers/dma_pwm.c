@@ -36,7 +36,7 @@ static void mod_exit(void);
 
 static int dma_init(void);
 static void dma_exit(void);
-static int dma_update(void);
+static void dma_update(void);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Vincent TRUMPFF");
@@ -195,12 +195,12 @@ int item_export(unsigned int gpio) {
 }
 
 int item_export_locked(unsigned int gpio) {
+  int status;
   struct item_desc *desc;
   struct device   *dev;
 
   desc = &item_table[gpio];
   desc->value = 0;
-  desc->gpio_value = 0;
   desc->dev = dev = device_create(&dev_class, NULL, MKDEV(0, 0), desc, "pwm%d", gpio);
   if(!dev) {
     return -ENODEV;
@@ -241,6 +241,8 @@ int item_unexport_locked(unsigned int gpio) {
 }
 
 int __init mod_init(void) {
+  int status;
+
   if((status = class_register(&dev_class)) < 0) {
     return status;
   }
@@ -276,12 +278,13 @@ void __exit mod_exit(void) {
 
 int dma_init(void) {
   // TODO
+  return 0;
 }
 
 void dma_exit(void) {
   // TODO
 }
 
-int dma_update(void) {
+void dma_update(void) {
   // TODO
 }
