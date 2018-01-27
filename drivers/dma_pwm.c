@@ -206,7 +206,7 @@ int item_export_locked(unsigned int gpio) {
     return -ENODEV;
   }
 
-  if(!(status = sysfs_create_group(&dev->kobj, &dev_item))) {
+  if((status = sysfs_create_group(&dev->kobj, &dev_item)) < 0) {
     device_unregister(dev);
     return status;
   }
@@ -236,6 +236,8 @@ int item_unexport_locked(unsigned int gpio) {
 
   put_device(dev);
   device_unregister(dev);
+  desc->dev = NULL;
+
   printk(KERN_INFO "Unregistered device pwm%d\n", gpio);
   return 0;
 }
