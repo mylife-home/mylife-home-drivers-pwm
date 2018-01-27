@@ -34,9 +34,9 @@ static ssize_t unexport_store(struct class *class, struct class_attribute *attr,
 static int mod_init(void);
 static void mod_exit(void);
 
-static int dma_pwm_init();
-static void dma_pwm_exit();
-static int dma_pwm_update();
+static int dma_init(void);
+static void dma_exit(void);
+static int dma_update(void);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Vincent TRUMPFF");
@@ -81,7 +81,7 @@ ssize_t attr_store(struct device *dev, struct device_attribute *attr, const char
   mutex_unlock(&sysfs_lock);
 
   if(status >= 0) {
-    dma_pwm_update();
+    dma_update();
   }
 
   return status;
@@ -150,7 +150,7 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 
   set_bit(FLAG_PWM, &item_table[gpio].flags);
 
-  dma_pwm_update();
+  dma_update();
 
   return len;
 }
@@ -175,7 +175,7 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
     return status;
   }
 
-  dma_pwm_update();
+  dma_update();
 
   gpio_set_value(gpio, 0);
   gpio_free(gpio);
@@ -238,7 +238,7 @@ int __init mod_init(void) {
     return status;
   }
 
-  if((status = dma_pwm_init()) < 0) {
+  if((status = dma_init()) < 0) {
     class_unregister(&dev_class);
     return status;
   }
@@ -261,20 +261,20 @@ void __exit mod_exit(void) {
     gpio_free(gpio);
   }
 
-  dma_pwm_exit();
+  dma_exit();
 
   class_unregister(&dev_class);
   printk(KERN_INFO "DMA PWM v1.0 unloaded.\n");
 }
 
-int dma_pwm_init() {
+int dma_init(void) {
   // TODO
 }
 
-void dma_pwm_exit() {
+void dma_exit(void) {
   // TODO
 }
 
-int dma_pwm_update() {
+int dma_update(void) {
   // TODO
 }
