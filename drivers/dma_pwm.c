@@ -69,15 +69,19 @@ static struct class dev_class = {
 };
 
 ssize_t attr_show(struct device *dev, struct device_attribute *attr, char *buf) {
+  ssize_t status;
+
   mutex_lock(&sysfs_lock);
-  ssize_t status = attr_show_locked(dev, attr, buf);
+  status = attr_show_locked(dev, attr, buf);
   mutex_unlock(&sysfs_lock);
   return status;
 }
 
 ssize_t attr_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size) {
+  ssize_t status;
+
   mutex_lock(&sysfs_lock);
-  ssize_t status = attr_store_locked(dev, attr, buf, size);
+  status = attr_store_locked(dev, attr, buf, size);
   mutex_unlock(&sysfs_lock);
 
   if(status >= 0) {
@@ -133,9 +137,8 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
     return status;
   }
 
-  status = gpio_request(gpio, "dma_pwm");
-  if(status < 0) {
-    return status
+  if((status = gpio_request(gpio, "dma_pwm")) < 0) {
+    return status;
   }
 
   if((status = gpio_direction_output(gpio, 0)) < 0) {
@@ -159,7 +162,7 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
   long gpio;
   int  status;
 
-  if((status = kstrtol(buf, 0, &gpio) < 0) {
+  if((status = kstrtol(buf, 0, &gpio)) < 0) {
     return status;
   }
 
@@ -183,8 +186,10 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
 }
 
 int item_export(unsigned int gpio) {
+  int status;
+
   mutex_lock(&sysfs_lock);
-  int status = item_export_locked(gpio);
+  status = item_export_locked(gpio);
   mutex_unlock(&sysfs_lock);
   return status;
 }
@@ -211,8 +216,10 @@ int item_export_locked(unsigned int gpio) {
 }
 
 int item_unexport(unsigned int gpio) {
+  int status;
+
   mutex_lock(&sysfs_lock);
-  int status = item_unexport_locked(gpio);
+  status = item_unexport_locked(gpio);
   mutex_unlock(&sysfs_lock);
   return status;
 }
