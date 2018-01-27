@@ -9,8 +9,6 @@
 #include <linux/kdev_t.h>
 #include <linux/gpio.h>
 
-#include "driver.h"
-
 struct item_desc {
   struct device *dev;  // corresponding sysfs device
   int value;           // 0 - 100
