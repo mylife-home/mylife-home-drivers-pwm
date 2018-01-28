@@ -1,7 +1,7 @@
 # http://lxr.free-electrons.com/source/Documentation/kbuild/modules.txt
 
 obj-m = dma_pwm.o
-dma_pwm-y := management.o dma.o
+dma_pwm-y := management.o hw.o
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
