@@ -10,8 +10,8 @@ struct item_desc {
 
 extern struct item_desc item_table[ARCH_NR_GPIOS];
 
-extern int dma_init(void);
-extern void dma_exit(void);
-extern void dma_update();
+extern int hw_init(void);
+extern void hw_exit(void);
+extern void hw_update(void);
 
-#endif __MYLIFE_DMA_PWM_COMMON_H__
+#endif // __MYLIFE_DMA_PWM_COMMON_H__
