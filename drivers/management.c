@@ -1,24 +1,14 @@
-// https://github.com/ant9000/soft_pwm/blob/master/soft_pwm.c
-// https://github.com/sarfata/pi-blaster/blob/master/pi-blaster.c
-
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
-#include <linux/hrtimer.h>
-#include <linux/ktime.h>
 #include <linux/device.h>
 #include <linux/kdev_t.h>
 #include <linux/gpio.h>
 
-struct item_desc {
-  struct device *dev;  // corresponding sysfs device
-  int value;           // 0 - 100
-  unsigned long flags; // only FLAG_PWM is used, for synchronizing inside module
-#define FLAG_PWM 1
-};
+#include "common.h"
 
-static struct item_desc item_table[ARCH_NR_GPIOS];
+struct item_desc item_table[ARCH_NR_GPIOS];
 
 static DEFINE_MUTEX(sysfs_lock);
 
@@ -35,10 +25,6 @@ static ssize_t unexport_store(struct class *class, struct class_attribute *attr,
 
 static int mod_init(void);
 static void mod_exit(void);
-
-static int dma_init(void);
-static void dma_exit(void);
-static void dma_update(void);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Vincent TRUMPFF");
@@ -87,7 +73,7 @@ ssize_t attr_store(struct device *dev, struct device_attribute *attr, const char
   mutex_unlock(&sysfs_lock);
 
   if(status >= 0) {
-    dma_update();
+    hw_update();
   }
 
   return status;
@@ -155,7 +141,7 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 
   set_bit(FLAG_PWM, &item_table[gpio].flags);
 
-  dma_update();
+  hw_update();
 
   return len;
 }
@@ -180,7 +166,7 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
     return status;
   }
 
-  dma_update();
+  hw_update();
 
   gpio_set_value(gpio, 0);
   gpio_free(gpio);
@@ -251,7 +237,7 @@ int __init mod_init(void) {
     return status;
   }
 
-  if((status = dma_init()) < 0) {
+  if((status = hw_init()) < 0) {
     class_unregister(&dev_class);
     return status;
   }
@@ -274,21 +260,8 @@ void __exit mod_exit(void) {
     gpio_free(gpio);
   }
 
-  dma_exit();
+  hw_exit();
 
   class_unregister(&dev_class);
   printk(KERN_INFO "DMA PWM v1.0 unloaded.\n");
-}
-
-int dma_init(void) {
-  // TODO
-  return 0;
-}
-
-void dma_exit(void) {
-  // TODO
-}
-
-void dma_update(void) {
-  // TODO
 }
