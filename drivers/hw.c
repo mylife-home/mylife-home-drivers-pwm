@@ -221,7 +221,7 @@ void init_ctrl_data(void) {
     cbp->length = sizeof(uint32_t);
     cbp->stride = 0;
     cbp->next = virt_to_phys(cbp + 1);
-    cbp++;
+    ++cbp;
 
     // Second DMA command
     cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP | DMA_D_DREQ | DMA_PER_MAP(5);
