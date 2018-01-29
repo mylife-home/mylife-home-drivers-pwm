@@ -162,6 +162,9 @@ int hw_init(void) {
 
 #undef CHECK_MEM
 
+  init_ctrl_data();
+  init_hardware();
+
   hw_update();
 
   return 0;
