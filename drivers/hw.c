@@ -22,6 +22,11 @@
 #error "Unknown arch"
 #endif
 
+#define CYCLE_TIME_US 10000
+#define SAMPLE_US     10
+#define NUM_SAMPLES   (CYCLE_TIME_US / SAMPLE_US)
+#define NUM_CBS       (NUM_SAMPLES * 2)
+
 struct dma_cb {
   uint32_t info;
   uint32_t src;
@@ -32,11 +37,12 @@ struct dma_cb {
   uint32_t pad[2];
 };
 
-#define CYCLE_TIME_US 10000
-#define SAMPLE_US     10
-#define NUM_SAMPLES   (CYCLE_TIME_US / SAMPLE_US)
-#define NUM_CBS       (NUM_SAMPLES * 2)
-#define NUM_PAGES     ((NUM_CBS * sizeof(struct dma_cb) + NUM_SAMPLES * 4 + PAGE_SIZE - 1) >> PAGE_SHIFT)
+struct ctl {
+  uint32_t sample[NUM_SAMPLES];
+  struct dma_cb cb[NUM_CBS];
+};
+
+#define NUM_PAGES     ((sizeof(struct ctl) + PAGE_SIZE - 1) >> PAGE_SHIFT)
 
 #define PWM_BASE      (IO_PHYS_BASE + 0x20C000)
 #define PWM_LEN       0x28
