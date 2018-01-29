@@ -2,7 +2,7 @@
 
 obj-m = dma_pwm.o
 dma_pwm-y := management.o hw.o
-ccflags-y := "-D$(MYLIFE_ARCH)"
+ccflags-y := -D$(MYLIFE_ARCH)
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
