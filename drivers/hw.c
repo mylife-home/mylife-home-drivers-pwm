@@ -1,4 +1,5 @@
 // https://github.com/sarfata/pi-blaster/blob/master/pi-blaster.c
+// http://www.valvers.com/wp-content/uploads/2013/01/arm-c-virtual-addresses.jpg
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -10,7 +11,12 @@
 
 #include "common.h"
 
-#define PERI_BASE     BCM2708_PERI_BASE
+// should we use kernel map in vm ?
+#if   defined (CONFIG_ARCH_BCM2708)
+#define IO_PHYS_BASE 0x20000000
+#elif defined (CONFIG_ARCH_BCM2709)
+#define IO_PHYS_BASE 0x3f000000
+#endif
 
 #define CYCLE_TIME_US 10000
 #define SAMPLE_US     10
@@ -18,20 +24,19 @@
 #define NUM_CBS       (NUM_SAMPLES * 2)
 #define NUM_PAGES     ((NUM_CBS * sizeof(dma_cb_t) + NUM_SAMPLES * 4 + PAGE_SIZE - 1) >> PAGE_SHIFT)
 
+#define PWM_BASE      (IO_PHYS_BASE + 0x20C000)
+#define PWM_LEN       0x28
+#define CLK_BASE      (IO_PHYS_BASE + 0x101000)
+#define CLK_LEN       0xA8
+#define DMA_BASE      (IO_PHYS_BASE + 0x00007000)
 #define DMA_CHAN_NUM  14    // the DMA Channel we are using, NOTE: DMA Ch 0 seems to be used by X... better not use it ;)
 #define DMA_CHAN_SIZE 0x100 // size of register space for a single DMA channel
 #define DMA_CHAN_MAX  14    // number of DMA Channels we have... actually, there are 15... but channel fifteen is mapped at a different DMA_BASE, so we leave that one alone
 #define DMA_CHAN_BASE (DMA_BASE + DMA_CHAN_NUM * DMA_CHAN_SIZE)
 
-#define PWM_BASE      (PERI_BASE + 0x20C000)
-#define PWM_LEN       0x28
-#define CLK_BASE      (PERI_BASE + 0x101000)
-#define CLK_LEN       0xA8
-
 static volatile uint32_t *dma_reg;
 static volatile uint32_t *clk_reg;
 static volatile uint32_t *pwm_reg;
-
 
 int hw_init(void) {
 
