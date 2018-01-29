@@ -60,11 +60,11 @@ static volatile uint32_t *pwm_reg;
 
 int hw_init(void) {
 
-  printk(KERN_INFO "DMA Channel:                 %d\n", DMA_CHAN_NUM);
+  printk(KERN_INFO "DMA Channel:                 %5d\n", DMA_CHAN_NUM);
   printk(KERN_INFO "PWM frequency:               %5d Hz\n", 1000000/CYCLE_TIME_US);
   printk(KERN_INFO "PWM steps:                   %5d\n", NUM_SAMPLES);
-  printk(KERN_INFO "Maximum period (100  %%):   %5dus\n", CYCLE_TIME_US);
-  printk(KERN_INFO "Minimum period (%1.3f%%): %5dus\n", 100.0 * SAMPLE_US / CYCLE_TIME_US, SAMPLE_US);
+  printk(KERN_INFO "Maximum period (100 %%):    %5dus\n", CYCLE_TIME_US);
+  printk(KERN_INFO "Minimum period (%1.3f%%): %5dus\n", (100.0 * SAMPLE_US / CYCLE_TIME_US), SAMPLE_US);
 
   dma_reg = memremap(DMA_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT);
   pwm_reg = memremap(PWM_BASE, PWM_LEN, MEMREMAP_WT);
@@ -72,19 +72,10 @@ int hw_init(void) {
 
   printk(KERN_INFO "NUM_PAGES:                 %lu\n", NUM_PAGES);
 /*
-  unsigned long __get_free_pages(unsigned int gfp_mask, unsigned int order)
+  unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order)
   GFP_KERNEL
 
-  void __free_pages(struct page *page, unsigned int order)
- Free an order number of pages from the given page
-
-void __free_page(struct page *page)
- Free a single page
-
-void free_page(void *addr)
- Free a page from the given virtual address
-
-
+  void free_pages(unsigned long addr, unsigned int order)
 
   // Use the mailbox interface to the VC to ask for physical memory
   mbox.mem_ref = mem_alloc(mbox.handle, NUM_PAGES * PAGE_SIZE, PAGE_SIZE, mem_flag);
