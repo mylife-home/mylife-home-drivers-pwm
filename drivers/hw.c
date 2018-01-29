@@ -4,12 +4,8 @@
 // https://www.kernel.org/doc/gorman/html/understand/understand009.html
 
 #include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/moduleparam.h>
-#include <linux/init.h>
-#include <linux/device.h>
-#include <linux/kdev_t.h>
 #include <linux/gpio.h>
+#include <linux/delay.h>
 
 #include "common.h"
 
