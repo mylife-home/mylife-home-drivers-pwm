@@ -172,7 +172,7 @@ int hw_init(void) {
 
 void hw_exit(void) {
 
-  udelay(CYCLE_TIME_US);
+  mdelay(CYCLE_TIME_US / 1000);
   write_reg_and_wait(dma_reg, DMA_CS, DMA_RESET, 10);
 
   memory_cleanup();
