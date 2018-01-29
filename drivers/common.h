@@ -12,6 +12,6 @@ extern struct item_desc item_table[ARCH_NR_GPIOS];
 
 extern int hw_init(void);
 extern void hw_exit(void);
-extern void hw_update(void);
+extern void hw_update(int wait);
 
 #endif // __MYLIFE_DMA_PWM_COMMON_H__

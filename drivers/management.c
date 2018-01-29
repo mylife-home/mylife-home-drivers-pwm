@@ -73,7 +73,7 @@ ssize_t attr_store(struct device *dev, struct device_attribute *attr, const char
   mutex_unlock(&sysfs_lock);
 
   if(status >= 0) {
-    hw_update();
+    hw_update(0);
   }
 
   return status;
@@ -141,7 +141,7 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 
   set_bit(FLAG_PWM, &item_table[gpio].flags);
 
-  hw_update();
+  hw_update(0);
 
   return len;
 }
@@ -166,7 +166,7 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
     return status;
   }
 
-  hw_update();
+  hw_update(1);
 
   gpio_set_value(gpio, 0);
   gpio_free(gpio);
@@ -255,9 +255,18 @@ void __exit mod_exit(void) {
       continue;
     }
 
-    item_unexport(gpio);
+    desc->value = 0;
+  }
 
-    hw_update();
+  hw_update(1);
+
+  for(gpio=0; gpio<ARCH_NR_GPIOS; ++gpio) {
+    struct item_desc *desc = &item_table[gpio];
+    if(!test_bit(FLAG_PWM, &desc->flags)) {
+      continue;
+    }
+
+    item_unexport(gpio);
 
     gpio_set_value(gpio, 0);
     gpio_free(gpio);

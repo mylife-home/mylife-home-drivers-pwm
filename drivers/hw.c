@@ -166,21 +166,19 @@ int hw_init(void) {
 
   init_ctrl_data();
   init_hardware();
-
-  hw_update();
+  hw_update(0);
 
   return 0;
 }
 
 void hw_exit(void) {
 
-  mdelay(CYCLE_TIME_US / 1000);
   write_reg_and_wait(dma_reg, DMA_CS, DMA_RESET, 10);
 
   memory_cleanup();
 }
 
-void hw_update(void) {
+void hw_update(int wait) {
 
   struct ctl *ctl = (struct ctl *)ctl_addr;
   int sample;
@@ -195,19 +193,18 @@ void hw_update(void) {
     ctl->cb[sample*2].dst = GPIO_BUS_BASE + GPCLR0;
     ctl->sample[sample] = create_clear_mask(sample);
   }
+
+  if(wait) {
+    mdelay(CYCLE_TIME_US / 1000);
+  }
 }
 
 void init_ctrl_data(void) {
 
   struct ctl *ctl = (struct ctl *)ctl_addr;
   struct dma_cb *cbp = ctl->cb;
-  int sample;
 
   memset(ctl->sample, 0, sizeof(ctl->sample));
-
-  for (sample = 0; sample < NUM_SAMPLES; ++sample) {
-    ctl->sample[sample] = 0;
-  }
 
   /* Initialize all the DMA commands. They come in pairs.
    *  - 1st command copies a value from the sample memory to a destination
