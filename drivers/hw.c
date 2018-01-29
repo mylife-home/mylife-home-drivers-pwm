@@ -68,6 +68,15 @@ int hw_init(void) {
   clk_reg = memremap(CLK_BASE, CLK_LEN, MEMREMAP_WT);
 
   printk(KERN_INFO "NUM_PAGES:                 %lu\n", NUM_PAGES);
+
+  unsigned int order = 0;
+  while(1 << order < NUM_PAGES) {
+    ++order;
+  }
+
+  printk(KERN_INFO "order:                 %d\n", order);
+
+
 /*
   unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order)
   GFP_KERNEL
