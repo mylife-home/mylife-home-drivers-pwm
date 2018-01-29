@@ -1,5 +1,7 @@
 // https://github.com/sarfata/pi-blaster/blob/master/pi-blaster.c
+// https://github.com/richardghirst/PiBits/blob/master/ServoBlaster/kernel/servoblaster.c
 // http://www.valvers.com/wp-content/uploads/2013/01/arm-c-virtual-addresses.jpg
+// https://www.kernel.org/doc/gorman/html/understand/understand009.html
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -52,9 +54,24 @@ int hw_init(void) {
   pwm_reg = memremap(PWM_BASE, PWM_LEN, MEMREMAP_WT);
   clk_reg = memremap(CLK_BASE, CLK_LEN, MEMREMAP_WT);
 
-  /* Use the mailbox interface to the VC to ask for physical memory */
+  printk(KERN_INFO "NUM_PAGES:                 %d\n", NUM_PAGES);
+/*
+  unsigned long __get_free_pages(unsigned int gfp_mask, unsigned int order)
+  GFP_KERNEL
+
+  void __free_pages(struct page *page, unsigned int order)
+ Free an order number of pages from the given page
+
+void __free_page(struct page *page)
+ Free a single page
+
+void free_page(void *addr)
+ Free a page from the given virtual address
+
+
+
+  // Use the mailbox interface to the VC to ask for physical memory
   mbox.mem_ref = mem_alloc(mbox.handle, NUM_PAGES * PAGE_SIZE, PAGE_SIZE, mem_flag);
-  /* TODO: How do we know that succeeded? */
   dprintf("mem_ref %u\n", mbox.mem_ref);
   mbox.bus_addr = mem_lock(mbox.handle, mbox.mem_ref);
   dprintf("bus_addr = %#x\n", mbox.bus_addr);
@@ -64,7 +81,7 @@ int hw_init(void) {
   if ((unsigned long)mbox.virt_addr & (PAGE_SIZE-1))
     fatal("pi-blaster: Virtual address is not page aligned\n");
 
-  /* we are done with the mbox */
+  // we are done with the mbox
   mbox_close(mbox.handle);
   mbox.handle = -1;
 
@@ -74,7 +91,7 @@ int hw_init(void) {
   // Init pin2gpio array with 0/false values to avoid locking all of them as PWM.
   init_pin2gpio();
   // Only calls update_pwm after ctrl_data calculates the pin mask to unlock all pins on start.
-
+*/
   hw_update();
 
   return 0;
@@ -82,7 +99,7 @@ int hw_init(void) {
 
 void hw_exit(void) {
   int i;
-
+/*
   dprintf("Resetting DMA...\n");
   if (dma_reg && mbox.virt_addr) {
     for (i = 0; i < num_channels; i++)
@@ -97,14 +114,13 @@ void hw_exit(void) {
   if (mbox.virt_addr != NULL) {
     unmapmem(mbox.virt_addr, NUM_PAGES * PAGE_SIZE);
     if (mbox.handle <= 2) {
-      /* we need to reopen mbox file */
       mbox.handle = mbox_open();
     }
     mem_unlock(mbox.handle, mbox.mem_ref);
     mem_free(mbox.handle, mbox.mem_ref);
     mbox_close(mbox.handle);
   }
-
+*/
   unmemremap(dma_reg);
   unmemremap(pwm_reg);
   unmemremap(clk_reg);
