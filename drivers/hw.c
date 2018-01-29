@@ -60,11 +60,8 @@ static volatile uint32_t *pwm_reg;
 
 int hw_init(void) {
 
-  printk(KERN_INFO "DMA Channel:                 %5d\n", DMA_CHAN_NUM);
-  printk(KERN_INFO "PWM frequency:               %5d Hz\n", 1000000/CYCLE_TIME_US);
-  printk(KERN_INFO "PWM steps:                   %5d\n", NUM_SAMPLES);
-  printk(KERN_INFO "Maximum period (100 %%):    %5dus\n", CYCLE_TIME_US);
-  printk(KERN_INFO "Minimum period (%1.3f%%): %5dus\n", (100.0 * SAMPLE_US / CYCLE_TIME_US), SAMPLE_US);
+  printk(KERN_INFO "DMA Channel:   %5d\n", DMA_CHAN_NUM);
+  printk(KERN_INFO "PWM frequency: %5d Hz\n", 1000000/CYCLE_TIME_US);
 
   dma_reg = memremap(DMA_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT);
   pwm_reg = memremap(PWM_BASE, PWM_LEN, MEMREMAP_WT);
