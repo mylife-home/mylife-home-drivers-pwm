@@ -46,11 +46,19 @@ struct ctl {
 #define PWM_LEN            0x28
 #define PWM_PHYS_BASE      (IO_PHYS_BASE + PWM_OFFSET)
 #define PWM_BUS_BASE       (IO_BUS_BASE  + PWM_OFFSET)
-#define BUS_FIFO_ADDR      (PWM_BUS_BASE + 0x18)
+
+#define PWM_CTL            0x00
+#define PWM_STA            0x04
+#define PWM_DMAC           0x08
+#define PWM_RNG1           0x10
+#define PWM_FIFO           0x18
 
 #define CLK_OFFSET         0x00101000
 #define CLK_LEN            0xA8
 #define CLK_PHYS_BASE      (IO_PHYS_BASE + CLK_OFFSET)
+
+#define CLK_CNTL           40
+#define CLK_DIV            41
 
 #define GPIO_OFFSET        0x00200000
 #define GPIO_LEN           0x100
@@ -209,7 +217,7 @@ void init_ctrl_data(void) {
     // Second DMA command
     cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP | DMA_D_DREQ | DMA_PER_MAP(5);
     cbp->src = virt_to_phys(ctl); // Any data will do
-    cbp->dst = BUS_FIFO_ADDR;
+    cbp->dst = PWM_BUS_BASE + PWM_FIFO;
     cbp->length = sizeof(uint32_t);
     cbp->stride = 0;
     cbp->next = virt_to_phys(cbp + 1);
@@ -223,14 +231,13 @@ void init_ctrl_data(void) {
 
 void init_hardware(void) {
 
-  dprintf("Initializing PWM/PCM HW...\n");
-  struct ctl *ctl = (struct ctl *)mbox.virt_addr;
+  struct ctl *ctl = (struct ctl *)ctl_addr;
 
   // Initialize PWM
   write_reg_and_wait(pwm_reg, PWM_CTL, 0, 10);
-  write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000006, 100); // Source=PLLD (500MHz)
-  write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000 | (500<<12), 100); // set pwm div to 500, giving 1MHz
-  write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000016, 100); // Source=PLLD and enable
+  write_reg_and_wait(clk_reg, CLK_CNTL, 0x5A000006, 100); // Source=PLLD (500MHz)
+  write_reg_and_wait(clk_reg, CLK_DIV, 0x5A000000 | (500<<12), 100); // set pwm div to 500, giving 1MHz
+  write_reg_and_wait(clk_reg, CLK_CNTL, 0x5A000016, 100); // Source=PLLD and enable
   write_reg_and_wait(pwm_reg, PWM_RNG1, SAMPLE_US, 10);
   write_reg_and_wait(pwm_reg, PWM_DMAC, PWMDMAC_ENAB | PWMDMAC_THRSHLD, 10);
   write_reg_and_wait(pwm_reg, PWM_CTL, PWMCTL_CLRF, 10);
