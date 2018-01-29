@@ -12,9 +12,9 @@
 #include "common.h"
 
 // should we use kernel map in vm ?
-#if   defined (CONFIG_ARCH_BCM2708)
+#if   defined (ARCH_BCM2708)
 #define IO_PHYS_BASE 0x20000000
-#elif defined (CONFIG_ARCH_BCM2709)
+#elif defined (ARCH_BCM2709)
 #define IO_PHYS_BASE 0x3f000000
 #else
 #error "Unknown arch"
