@@ -101,7 +101,7 @@ static void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_
 static void write_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value, unsigned long usecs);
 static void init_ctrl_data(void);
 static void init_hardware(void);
-static uint32_t create_set_mask();
+static uint32_t create_set_mask(void);
 static uint32_t create_clear_mask(unsigned int sample);
 
 inline unsigned int get_page_order(unsigned int page_count) {
@@ -262,7 +262,7 @@ void init_hardware(void) {
   write_reg(dma_reg, DMA_CS, 0x10880001); // go, mid priority, wait for outstanding writes
 }
 
-inline uint32_t create_set_mask() {
+inline uint32_t create_set_mask(void) {
   uint32_t mask = 0;
   unsigned int gpio;
 
@@ -294,7 +294,7 @@ inline uint32_t create_clear_mask(unsigned int sample) {
     }
 
     // max value = 100
-    if(value * NUM_SAMPLE > sample * 100) {
+    if(desc->value * NUM_SAMPLES > sample * 100) {
       continue;
     }
 
