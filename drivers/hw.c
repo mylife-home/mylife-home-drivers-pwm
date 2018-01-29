@@ -101,6 +101,8 @@ static void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_
 static void write_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value, unsigned long usecs);
 static void init_ctrl_data(void);
 static void init_hardware(void);
+static uint32_t create_set_mask();
+static uint32_t create_clear_mask(unsigned int sample);
 
 inline unsigned int get_page_order(unsigned int page_count) {
   unsigned int order = 0;
@@ -179,19 +181,32 @@ void hw_exit(void) {
 }
 
 void hw_update(void) {
-  // TODO
+
+  struct ctl *ctl = (struct ctl *)ctl_addr;
+  int sample;
+
+  // First we turn on the channels that need to be on
+  //   Take the first DMA Packet and set it's target to start pulse
+  ctl->cb[0].dst = GPIO_BUS_BASE + GPSET0;
+  ctl->sample[0] = create_set_mask();
+
+  // Now we go through all the samples and turn the pins off when needed
+  for (sample = 1; sample < NUM_SAMPLES; ++sample) {
+    ctl->cb[sample*2].dst = GPIO_BUS_BASE + GPCLR0;
+    ctl->sample[sample] = create_clear_mask(sample);
+  }
 }
 
 void init_ctrl_data(void) {
 
   struct ctl *ctl = (struct ctl *)ctl_addr;
   struct dma_cb *cbp = ctl->cb;
-  int i;
+  int sample;
 
   memset(ctl->sample, 0, sizeof(ctl->sample));
 
-  for (i = 0; i < NUM_SAMPLES; i++) {
-    ctl->sample[i] = 0;
+  for (sample = 0; sample < NUM_SAMPLES; ++sample) {
+    ctl->sample[sample] = 0;
   }
 
   /* Initialize all the DMA commands. They come in pairs.
@@ -199,11 +214,11 @@ void init_ctrl_data(void) {
    *    address whichis gpclr0 register
    *  - 2nd command waits for a trigger from an external source (PWM)
    */
-  for (i = 0; i < NUM_SAMPLES; i++) {
+  for (sample = 0; sample < NUM_SAMPLES; ++sample) {
 
     // First DMA command
     cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP;
-    cbp->src = virt_to_phys(ctl->sample + i);
+    cbp->src = virt_to_phys(ctl->sample + sample);
     cbp->dst = GPIO_BUS_BASE + GPCLR0;
     cbp->length = sizeof(uint32_t);
     cbp->stride = 0;
@@ -246,3 +261,46 @@ void init_hardware(void) {
   write_reg(dma_reg, DMA_DEBUG, 7); // clear debug error flags
   write_reg(dma_reg, DMA_CS, 0x10880001); // go, mid priority, wait for outstanding writes
 }
+
+inline uint32_t create_set_mask() {
+  uint32_t mask = 0;
+  unsigned int gpio;
+
+  for(gpio=0; gpio<ARCH_NR_GPIOS; ++gpio) {
+    struct item_desc *desc = &item_table[gpio];
+    if(!test_bit(FLAG_PWM, &desc->flags)) {
+      continue;
+    }
+
+    // value = 0 -> no pulse
+    if(desc->value == 0) {
+      continue;
+    }
+
+    mask |= 1 << gpio;
+  }
+
+  return mask;
+}
+
+inline uint32_t create_clear_mask(unsigned int sample) {
+  uint32_t mask = 0;
+  unsigned int gpio;
+
+  for(gpio=0; gpio<ARCH_NR_GPIOS; ++gpio) {
+    struct item_desc *desc = &item_table[gpio];
+    if(!test_bit(FLAG_PWM, &desc->flags)) {
+      continue;
+    }
+
+    // max value = 100
+    if(value * NUM_SAMPLE > sample * 100) {
+      continue;
+    }
+
+    mask |= 1 << gpio;
+  }
+
+  return mask;
+}
+

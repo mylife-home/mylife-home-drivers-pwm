@@ -249,7 +249,7 @@ int __init mod_init(void) {
 void __exit mod_exit(void) {
   unsigned int gpio;
 
-  for(gpio=0; gpio<ARCH_NR_GPIOS; gpio++) {
+  for(gpio=0; gpio<ARCH_NR_GPIOS; ++gpio) {
     struct item_desc *desc = &item_table[gpio];
     if(!test_bit(FLAG_PWM, &desc->flags)) {
       continue;
