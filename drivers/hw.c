@@ -63,7 +63,7 @@ static volatile uint32_t *clk_reg;
 static volatile uint32_t *pwm_reg;
 
 static unsigned int get_page_order(unsigned int page_count);
-static void memory_cleanup();
+static void memory_cleanup(void);
 
 inline unsigned int get_page_order(unsigned int page_count) {
   unsigned int order = 0;
@@ -73,10 +73,10 @@ inline unsigned int get_page_order(unsigned int page_count) {
   return order;
 }
 
-void memory_cleanup() {
+void memory_cleanup(void) {
   if(ctl_addr) {
     free_pages(ctl_addr, get_page_order(NUM_PAGES));
-    ctl_addr = NULL;
+    ctl_addr = 0;
   }
 
   if(dma_reg_addr) {
@@ -97,7 +97,7 @@ void memory_cleanup() {
 
 int hw_init(void) {
 
-  ctl_addr = NULL;
+  ctl_addr = 0;
   dma_reg_addr = NULL;
   pwm_reg_addr = NULL;
   clk_reg_addr = NULL;
