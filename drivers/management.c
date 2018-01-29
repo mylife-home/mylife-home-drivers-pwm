@@ -255,8 +255,11 @@ void __exit mod_exit(void) {
       continue;
     }
 
-    gpio_set_value(gpio, 0);
     item_unexport(gpio);
+
+    hw_update();
+
+    gpio_set_value(gpio, 0);
     gpio_free(gpio);
   }
 
