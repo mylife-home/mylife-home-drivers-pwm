@@ -162,33 +162,16 @@ int hw_init(void) {
 
 #undef CHECK_MEM
 
-/*
-  init_ctrl_data();
-  init_hardware();
-  init_channel_pwm();
-  // Init pin2gpio array with 0/false values to avoid locking all of them as PWM.
-  init_pin2gpio();
-  // Only calls update_pwm after ctrl_data calculates the pin mask to unlock all pins on start.
-*/
   hw_update();
 
   return 0;
 }
 
 void hw_exit(void) {
-/*
-  int i;
 
-  dprintf("Resetting DMA...\n");
-  if (dma_reg && mbox.virt_addr) {
-    for (i = 0; i < num_channels; i++)
-      channel_pwm[i] = 0;
-    update_pwm();
-    udelay(CYCLE_TIME_US);
-    dma_reg[DMA_CS] = DMA_RESET;
-    udelay(10);
-  }
-*/
+  udelay(CYCLE_TIME_US);
+  write_reg_and_wait(dma_reg, DMA_CS, DMA_RESET, 10);
+
   memory_cleanup();
 }
 
