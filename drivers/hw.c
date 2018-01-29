@@ -22,11 +22,21 @@
 #error "Unknown arch"
 #endif
 
+struct dma_cb {
+  uint32_t info;
+  uint32_t src;
+  uint32_t dst;
+  uint32_t length;
+  uint32_t stride;
+  uint32_t next;
+  uint32_t pad[2];
+};
+
 #define CYCLE_TIME_US 10000
 #define SAMPLE_US     10
 #define NUM_SAMPLES   (CYCLE_TIME_US / SAMPLE_US)
 #define NUM_CBS       (NUM_SAMPLES * 2)
-#define NUM_PAGES     ((NUM_CBS * sizeof(dma_cb_t) + NUM_SAMPLES * 4 + PAGE_SIZE - 1) >> PAGE_SHIFT)
+#define NUM_PAGES     ((NUM_CBS * sizeof(struct dma_cb) + NUM_SAMPLES * 4 + PAGE_SIZE - 1) >> PAGE_SHIFT)
 
 #define PWM_BASE      (IO_PHYS_BASE + 0x20C000)
 #define PWM_LEN       0x28
@@ -98,8 +108,9 @@ void free_page(void *addr)
 }
 
 void hw_exit(void) {
-  int i;
 /*
+  int i;
+
   dprintf("Resetting DMA...\n");
   if (dma_reg && mbox.virt_addr) {
     for (i = 0; i < num_channels; i++)
@@ -121,9 +132,9 @@ void hw_exit(void) {
     mbox_close(mbox.handle);
   }
 */
-  unmemremap(dma_reg);
-  unmemremap(pwm_reg);
-  unmemremap(clk_reg);
+  memunmap(dma_reg);
+  memunmap(pwm_reg);
+  memunmap(clk_reg);
 }
 
 void hw_update(void) {
