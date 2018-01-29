@@ -54,28 +54,62 @@ struct ctl {
 #define DMA_CHAN_MAX  14    // number of DMA Channels we have... actually, there are 15... but channel fifteen is mapped at a different DMA_BASE, so we leave that one alone
 #define DMA_CHAN_BASE (DMA_BASE + DMA_CHAN_NUM * DMA_CHAN_SIZE)
 
+static unsigned long ctl_addr;
 static volatile uint32_t *dma_reg;
 static volatile uint32_t *clk_reg;
 static volatile uint32_t *pwm_reg;
 
+static unsigned int get_page_order(unsigned int page_count);
+static void memory_cleanup();
+
+inline unsigned int get_page_order(unsigned int page_count) {
+  unsigned int order = 0;
+  while(1 << order < page_count) {
+    ++order;
+  }
+  return order;
+}
+
+void memory_cleanup() {
+  if(ctl_addr) {
+    free_pages(ctl_addr, get_page_order(NUM_PAGES));
+    ctl_addr = NULL;
+  }
+
+  if(dma_reg) {
+    memunmap(dma_reg);
+    dma_reg = NULL;
+  }
+
+  if(pwm_reg) {
+    memunmap(pwm_reg);
+    pwm_reg = NULL;
+  }
+
+  if(clk_reg) {
+    memunmap(clk_reg);
+    clk_reg = NULL;
+  }
+}
+
 int hw_init(void) {
+
+  ctl_addr = NULL;
+  dma_reg = NULL;
+  pwm_reg = NULL;
+  clk_reg = NULL;
 
   printk(KERN_INFO "DMA Channel:   %5d\n", DMA_CHAN_NUM);
   printk(KERN_INFO "PWM frequency: %5d Hz\n", 1000000/CYCLE_TIME_US);
 
-  dma_reg = memremap(DMA_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT);
-  pwm_reg = memremap(PWM_BASE, PWM_LEN, MEMREMAP_WT);
-  clk_reg = memremap(CLK_BASE, CLK_LEN, MEMREMAP_WT);
+#define CHECK_MEM(x) if(!(x)) { memory_cleanup(); return -ENOMEM; }
 
-  printk(KERN_INFO "NUM_PAGES:                 %lu\n", NUM_PAGES);
+  CHECK_MEM(dma_reg = memremap(DMA_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT));
+  CHECK_MEM(pwm_reg = memremap(PWM_BASE, PWM_LEN, MEMREMAP_WT));
+  CHECK_MEM(clk_reg = memremap(CLK_BASE, CLK_LEN, MEMREMAP_WT));
+  CHECK_MEM(ctl_addr = __get_free_pages(GFP_KERNEL, get_page_order(NUM_PAGES)));
 
-  unsigned int order = 0;
-  while(1 << order < NUM_PAGES) {
-    ++order;
-  }
-
-  printk(KERN_INFO "order:                 %d\n", order);
-
+#undef CHECK_MEM
 
 /*
   unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order)
@@ -135,9 +169,7 @@ void hw_exit(void) {
     mbox_close(mbox.handle);
   }
 */
-  memunmap(dma_reg);
-  memunmap(pwm_reg);
-  memunmap(clk_reg);
+  memory_cleanup();
 }
 
 void hw_update(void) {
