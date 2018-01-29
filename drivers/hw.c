@@ -86,10 +86,9 @@ struct ctl {
 #define DMA_RESET           (1<<31)
 #define DMA_INT             (1<<2)
 
-#define DMA_CS              BCM2708_DMA_CS
-#define DMA_CONBLK_AD       BCM2708_DMA_ADDR
-#define DMA_DEBUG           BCM2708_DMA_DEBUG
-
+#define DMA_CS              0x00
+#define DMA_CONBLK_AD       0x04
+#define DMA_DEBUG           0x20
 
 static unsigned long ctl_addr;
 static void *dma_reg;
