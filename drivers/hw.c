@@ -203,6 +203,7 @@ void init_ctrl_data(void) {
 
   struct ctl *ctl = (struct ctl *)ctl_addr;
   struct dma_cb *cbp = ctl->cb;
+  int sample;
 
   memset(ctl->sample, 0, sizeof(ctl->sample));
 
