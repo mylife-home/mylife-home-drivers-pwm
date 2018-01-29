@@ -16,6 +16,8 @@
 #define IO_PHYS_BASE 0x20000000
 #elif defined (CONFIG_ARCH_BCM2709)
 #define IO_PHYS_BASE 0x3f000000
+#else
+#error "Unknown arch"
 #endif
 
 #define CYCLE_TIME_US 10000
