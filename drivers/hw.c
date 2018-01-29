@@ -11,10 +11,10 @@
 
 #include "common.h"
 
-// should we use kernel map in vm ?
-#if   defined (ARCH_BCM2708)
+// TODO: use device tree : xxd /proc/device-tree/soc/ranges (2nd word)
+#if   defined (MYLIFE_ARCH_RPI1)
 #define IO_PHYS_BASE 0x20000000
-#elif defined (ARCH_BCM2709)
+#elif defined (MYLIFE_ARCH_RPI2)
 #define IO_PHYS_BASE 0x3f000000
 #else
 #error "Unknown arch"
