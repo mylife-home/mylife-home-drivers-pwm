@@ -70,7 +70,7 @@ int hw_init(void) {
   pwm_reg = memremap(PWM_BASE, PWM_LEN, MEMREMAP_WT);
   clk_reg = memremap(CLK_BASE, CLK_LEN, MEMREMAP_WT);
 
-  printk(KERN_INFO "NUM_PAGES:                 %d\n", NUM_PAGES);
+  printk(KERN_INFO "NUM_PAGES:                 %lu\n", NUM_PAGES);
 /*
   unsigned long __get_free_pages(unsigned int gfp_mask, unsigned int order)
   GFP_KERNEL
