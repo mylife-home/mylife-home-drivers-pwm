@@ -22,6 +22,8 @@
 #error "Unknown arch"
 #endif
 
+#define IO_BUS_BASE   0x7e000000
+
 #define CYCLE_TIME_US 10000
 #define SAMPLE_US     10
 #define NUM_SAMPLES   (CYCLE_TIME_US / SAMPLE_US)
@@ -42,28 +44,49 @@ struct ctl {
   struct dma_cb cb[NUM_CBS];
 };
 
-#define NUM_PAGES     ((sizeof(struct ctl) + PAGE_SIZE - 1) >> PAGE_SHIFT)
+#define NUM_PAGES ((sizeof(struct ctl) + PAGE_SIZE - 1) >> PAGE_SHIFT)
 
-#define PWM_BASE      (IO_PHYS_BASE + 0x20C000)
-#define PWM_LEN       0x28
-#define CLK_BASE      (IO_PHYS_BASE + 0x101000)
-#define CLK_LEN       0xA8
-#define DMA_BASE      (IO_PHYS_BASE + 0x00007000)
-#define DMA_CHAN_NUM  14    // the DMA Channel we are using, NOTE: DMA Ch 0 seems to be used by X... better not use it ;)
-#define DMA_CHAN_SIZE 0x100 // size of register space for a single DMA channel
-#define DMA_CHAN_MAX  14    // number of DMA Channels we have... actually, there are 15... but channel fifteen is mapped at a different DMA_BASE, so we leave that one alone
-#define DMA_CHAN_BASE (DMA_BASE + DMA_CHAN_NUM * DMA_CHAN_SIZE)
+#define PWM_OFFSET         0x0020C000
+#define PWM_LEN            0x28
+#define PWM_PHYS_BASE      (IO_PHYS_BASE + PWM_OFFSET)
+#define PWM_BUS_BASE       (IO_BUS_BASE  + PWM_OFFSET)
+#define BUS_FIFO_ADDR      (PWM_BUS_BASE + 0x18)
+
+#define CLK_OFFSET         0x00101000
+#define CLK_LEN            0xA8
+#define CLK_PHYS_BASE      (IO_PHYS_BASE + CLK_OFFSET)
+
+#define GPIO_OFFSET        0x00200000
+#define GPIO_LEN           0x100
+#define GPIO_BUS_BASE      (IO_BUS_BASE + GPIO_OFFSET)
+#define GPCLR0             0x28
+#define GPSET0             0x1c
+
+#define DMA_PHYS_BASE      (IO_PHYS_BASE + 0x00007000)
+#define DMA_CHAN_NUM       14    // the DMA Channel we are using, NOTE: DMA Ch 0 seems to be used by X... better not use it ;)
+#define DMA_CHAN_SIZE      0x100 // size of register space for a single DMA channel
+#define DMA_CHAN_MAX       14    // number of DMA Channels we have... actually, there are 15... but channel fifteen is mapped at a different DMA_PHYS_BASE, so we leave that one alone
+#define DMA_PHYS_CHAN_BASE (DMA_PHYS_BASE + DMA_CHAN_NUM * DMA_CHAN_SIZE)
+
+#define DMA_NO_WIDE_BURSTS  (1<<26)
+#define DMA_WAIT_RESP       (1<<3)
+#define DMA_D_DREQ          (1<<6)
+#define DMA_PER_MAP(x)      ((x)<<16)
+#define DMA_END             (1<<1)
+#define DMA_RESET           (1<<31)
+#define DMA_INT             (1<<2)
 
 static unsigned long ctl_addr;
-static void *dma_reg_addr;
-static void *clk_reg_addr;
-static void *pwm_reg_addr;
-static volatile uint32_t *dma_reg;
-static volatile uint32_t *clk_reg;
-static volatile uint32_t *pwm_reg;
+static void *dma_reg;
+static void *clk_reg;
+static void *pwm_reg;
 
 static unsigned int get_page_order(unsigned int page_count);
 static void memory_cleanup(void);
+static void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value);
+static void write_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value, unsigned long usecs);
+static void init_ctrl_data(void);
+static void init_hardware(void);
 
 inline unsigned int get_page_order(unsigned int page_count) {
   unsigned int order = 0;
@@ -79,66 +102,53 @@ void memory_cleanup(void) {
     ctl_addr = 0;
   }
 
-  if(dma_reg_addr) {
-    memunmap(dma_reg_addr);
-    dma_reg_addr = NULL;
+  if(dma_reg) {
+    memunmap(dma_reg);
+    dma_reg = NULL;
   }
 
-  if(pwm_reg_addr) {
-    memunmap(pwm_reg_addr);
-    pwm_reg_addr = NULL;
+  if(pwm_reg) {
+    memunmap(pwm_reg);
+    pwm_reg = NULL;
   }
 
-  if(clk_reg_addr) {
-    memunmap(clk_reg_addr);
-    clk_reg_addr = NULL;
+  if(clk_reg) {
+    memunmap(clk_reg);
+    clk_reg = NULL;
   }
+}
+
+inline void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value) {
+  volatile char *addr = reg_base_addr;
+  addr += reg_offset;
+  * ((volatile uint32_t *)addr) = value;
+}
+
+void write_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value, unsigned long usecs) {
+  write_reg(reg_base_addr, reg_offset, value);
+  udelay(usecs);
 }
 
 int hw_init(void) {
 
   ctl_addr = 0;
-  dma_reg_addr = NULL;
-  pwm_reg_addr = NULL;
-  clk_reg_addr = NULL;
+  dma_reg = NULL;
+  pwm_reg = NULL;
+  clk_reg = NULL;
 
   printk(KERN_INFO "DMA Channel:   %5d\n", DMA_CHAN_NUM);
-  printk(KERN_INFO "PWM frequency: %5d Hz\n", 1000000/CYCLE_TIME_US);
+  printk(KERN_INFO "PWM frequency: %5d Hz\n", 1000000 / CYCLE_TIME_US);
 
 #define CHECK_MEM(x) if(!(x)) { memory_cleanup(); return -ENOMEM; }
 
-  CHECK_MEM(dma_reg_addr = memremap(DMA_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT));
-  CHECK_MEM(pwm_reg_addr = memremap(PWM_BASE, PWM_LEN, MEMREMAP_WT));
-  CHECK_MEM(clk_reg_addr = memremap(CLK_BASE, CLK_LEN, MEMREMAP_WT));
+  CHECK_MEM(dma_reg = memremap(DMA_PHYS_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT));
+  CHECK_MEM(pwm_reg = memremap(PWM_PHYS_BASE, PWM_LEN, MEMREMAP_WT));
+  CHECK_MEM(clk_reg = memremap(CLK_PHYS_BASE, CLK_LEN, MEMREMAP_WT));
   CHECK_MEM(ctl_addr = __get_free_pages(GFP_KERNEL, get_page_order(NUM_PAGES)));
 
 #undef CHECK_MEM
 
-  dma_reg = dma_reg_addr;
-  pwm_reg = pwm_reg_addr;
-  clk_reg = clk_reg_addr;
-
 /*
-  unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order)
-  GFP_KERNEL
-
-  void free_pages(unsigned long addr, unsigned int order)
-
-  // Use the mailbox interface to the VC to ask for physical memory
-  mbox.mem_ref = mem_alloc(mbox.handle, NUM_PAGES * PAGE_SIZE, PAGE_SIZE, mem_flag);
-  dprintf("mem_ref %u\n", mbox.mem_ref);
-  mbox.bus_addr = mem_lock(mbox.handle, mbox.mem_ref);
-  dprintf("bus_addr = %#x\n", mbox.bus_addr);
-  mbox.virt_addr = mapmem(BUS_TO_PHYS(mbox.bus_addr), NUM_PAGES * PAGE_SIZE);
-  dprintf("virt_addr %p\n", mbox.virt_addr);
-
-  if ((unsigned long)mbox.virt_addr & (PAGE_SIZE-1))
-    fatal("pi-blaster: Virtual address is not page aligned\n");
-
-  // we are done with the mbox
-  mbox_close(mbox.handle);
-  mbox.handle = -1;
-
   init_ctrl_data();
   init_hardware();
   init_channel_pwm();
@@ -164,21 +174,76 @@ void hw_exit(void) {
     dma_reg[DMA_CS] = DMA_RESET;
     udelay(10);
   }
-
-  dprintf("Freeing mbox memory...\n");
-  if (mbox.virt_addr != NULL) {
-    unmapmem(mbox.virt_addr, NUM_PAGES * PAGE_SIZE);
-    if (mbox.handle <= 2) {
-      mbox.handle = mbox_open();
-    }
-    mem_unlock(mbox.handle, mbox.mem_ref);
-    mem_free(mbox.handle, mbox.mem_ref);
-    mbox_close(mbox.handle);
-  }
 */
   memory_cleanup();
 }
 
 void hw_update(void) {
   // TODO
+}
+
+void init_ctrl_data(void) {
+
+  struct ctl *ctl = (struct ctl *)ctl_addr;
+  struct dma_cb *cbp = ctl->cb;
+  int i;
+
+  memset(ctl->sample, 0, sizeof(ctl->sample));
+
+  for (i = 0; i < NUM_SAMPLES; i++) {
+    ctl->sample[i] = 0;
+  }
+
+  /* Initialize all the DMA commands. They come in pairs.
+   *  - 1st command copies a value from the sample memory to a destination
+   *    address whichis gpclr0 register
+   *  - 2nd command waits for a trigger from an external source (PWM)
+   */
+  for (i = 0; i < NUM_SAMPLES; i++) {
+
+    // First DMA command
+    cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP;
+    cbp->src = virt_to_phys(ctl->sample + i);
+    cbp->dst = GPIO_BUS_BASE + GPCLR0;
+    cbp->length = sizeof(uint32_t);
+    cbp->stride = 0;
+    cbp->next = virt_to_phys(cbp + 1);
+    cbp++;
+
+    // Second DMA command
+    cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP | DMA_D_DREQ | DMA_PER_MAP(5);
+    cbp->src = virt_to_phys(ctl); // Any data will do
+    cbp->dst = BUS_FIFO_ADDR;
+    cbp->length = sizeof(uint32_t);
+    cbp->stride = 0;
+    cbp->next = virt_to_phys(cbp + 1);
+    ++cbp;
+  }
+
+  // point to the first
+  --cbp;
+  cbp->next = virt_to_phys(ctl->cb);
+}
+
+void init_hardware(void) {
+
+  dprintf("Initializing PWM/PCM HW...\n");
+  struct ctl *ctl = (struct ctl *)mbox.virt_addr;
+
+  // Initialize PWM
+  write_reg_and_wait(pwm_reg, PWM_CTL, 0, 10);
+  write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000006, 100); // Source=PLLD (500MHz)
+  write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000 | (500<<12), 100); // set pwm div to 500, giving 1MHz
+  write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000016, 100); // Source=PLLD and enable
+  write_reg_and_wait(pwm_reg, PWM_RNG1, SAMPLE_US, 10);
+  write_reg_and_wait(pwm_reg, PWM_DMAC, PWMDMAC_ENAB | PWMDMAC_THRSHLD, 10);
+  write_reg_and_wait(pwm_reg, PWM_CTL, PWMCTL_CLRF, 10);
+  write_reg_and_wait(pwm_reg, PWM_CTL, PWMCTL_USEF1 | PWMCTL_PWEN1, 10);
+
+  // Initialize the DMA
+  write_reg_and_wait(dma_reg, DMA_CS, DMA_RESET, 10);
+  write_reg(dma_reg, DMA_CS, DMA_INT | DMA_END);
+  write_reg(dma_reg, DMA_CONBLK_AD, virt_to_phys(ctl->cb));
+  write_reg(dma_reg, DMA_DEBUG, 7); // clear debug error flags
+  write_reg(dma_reg, DMA_CS, 0x10880001); // go, mid priority, wait for outstanding writes
 }
