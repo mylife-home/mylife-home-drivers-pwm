@@ -55,6 +55,9 @@ struct ctl {
 #define DMA_CHAN_BASE (DMA_BASE + DMA_CHAN_NUM * DMA_CHAN_SIZE)
 
 static unsigned long ctl_addr;
+static void *dma_reg_addr;
+static void *clk_reg_addr;
+static void *pwm_reg_addr;
 static volatile uint32_t *dma_reg;
 static volatile uint32_t *clk_reg;
 static volatile uint32_t *pwm_reg;
@@ -76,40 +79,44 @@ void memory_cleanup() {
     ctl_addr = NULL;
   }
 
-  if(dma_reg) {
-    memunmap(dma_reg);
-    dma_reg = NULL;
+  if(dma_reg_addr) {
+    memunmap(dma_reg_addr);
+    dma_reg_addr = NULL;
   }
 
-  if(pwm_reg) {
-    memunmap(pwm_reg);
-    pwm_reg = NULL;
+  if(pwm_reg_addr) {
+    memunmap(pwm_reg_addr);
+    pwm_reg_addr = NULL;
   }
 
-  if(clk_reg) {
-    memunmap(clk_reg);
-    clk_reg = NULL;
+  if(clk_reg_addr) {
+    memunmap(clk_reg_addr);
+    clk_reg_addr = NULL;
   }
 }
 
 int hw_init(void) {
 
   ctl_addr = NULL;
-  dma_reg = NULL;
-  pwm_reg = NULL;
-  clk_reg = NULL;
+  dma_reg_addr = NULL;
+  pwm_reg_addr = NULL;
+  clk_reg_addr = NULL;
 
   printk(KERN_INFO "DMA Channel:   %5d\n", DMA_CHAN_NUM);
   printk(KERN_INFO "PWM frequency: %5d Hz\n", 1000000/CYCLE_TIME_US);
 
 #define CHECK_MEM(x) if(!(x)) { memory_cleanup(); return -ENOMEM; }
 
-  CHECK_MEM(dma_reg = memremap(DMA_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT));
-  CHECK_MEM(pwm_reg = memremap(PWM_BASE, PWM_LEN, MEMREMAP_WT));
-  CHECK_MEM(clk_reg = memremap(CLK_BASE, CLK_LEN, MEMREMAP_WT));
+  CHECK_MEM(dma_reg_addr = memremap(DMA_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT));
+  CHECK_MEM(pwm_reg_addr = memremap(PWM_BASE, PWM_LEN, MEMREMAP_WT));
+  CHECK_MEM(clk_reg_addr = memremap(CLK_BASE, CLK_LEN, MEMREMAP_WT));
   CHECK_MEM(ctl_addr = __get_free_pages(GFP_KERNEL, get_page_order(NUM_PAGES)));
 
 #undef CHECK_MEM
+
+  dma_reg = dma_reg_addr;
+  pwm_reg = pwm_reg_addr;
+  clk_reg = clk_reg_addr;
 
 /*
   unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order)
