@@ -216,26 +216,26 @@ void init_ctrl_data(void) {
 
     // First DMA command
     cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP;
-    cbp->src = virt_to_phys(ctl->sample + sample);
+    cbp->src = virt_to_bus(ctl->sample + sample);
     cbp->dst = GPIO_BUS_BASE + GPCLR0;
     cbp->length = sizeof(uint32_t);
     cbp->stride = 0;
-    cbp->next = virt_to_phys(cbp + 1);
+    cbp->next = virt_to_bus(cbp + 1);
     ++cbp;
 
     // Second DMA command
     cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP | DMA_D_DREQ | DMA_PER_MAP(5);
-    cbp->src = virt_to_phys(ctl); // Any data will do
+    cbp->src = virt_to_bus(ctl); // Any data will do
     cbp->dst = PWM_BUS_BASE + PWM_FIFO;
     cbp->length = sizeof(uint32_t);
     cbp->stride = 0;
-    cbp->next = virt_to_phys(cbp + 1);
+    cbp->next = virt_to_bus(cbp + 1);
     ++cbp;
   }
 
   // point to the first
   --cbp;
-  cbp->next = virt_to_phys(ctl->cb);
+  cbp->next = virt_to_bus(ctl->cb);
 }
 
 void init_hardware(void) {
@@ -255,7 +255,7 @@ void init_hardware(void) {
   // Initialize the DMA
   write_reg_and_wait(dma_reg, DMA_CS, DMA_RESET, 10);
   write_reg(dma_reg, DMA_CS, DMA_INT | DMA_END);
-  write_reg(dma_reg, DMA_CONBLK_AD, virt_to_phys(ctl->cb));
+  write_reg(dma_reg, DMA_CONBLK_AD, virt_to_bus(ctl->cb));
   write_reg(dma_reg, DMA_DEBUG, 7); // clear debug error flags
   write_reg(dma_reg, DMA_CS, 0x10880001); // go, mid priority, wait for outstanding writes
 }
