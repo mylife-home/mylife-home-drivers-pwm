@@ -323,7 +323,7 @@ void debug_dump_ctrl(void) {
   struct dma_cb *cbp = ctl->cb;
 
   printk(KERN_INFO "ctl: %p\n", ctl);
-  printk(KERN_INFO "virt_to_phys(ctl): %p\n", virt_to_phys(ctl));
+  printk(KERN_INFO "virt_to_phys(ctl): %p\n", (void *)virt_to_phys(ctl));
   printk(KERN_INFO "virt_to_bus(ctl): %p\n", virt_to_bus(ctl));
 
   for (i = 0; i < 4; ++i) {
