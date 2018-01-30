@@ -104,6 +104,8 @@ static void init_ctrl_data(void);
 static void init_hardware(void);
 static uint32_t create_set_mask(void);
 static uint32_t create_clear_mask(unsigned int sample);
+static void debug_dump_ctrl(void);
+static void debug_dump_samples(void);
 
 inline unsigned int get_page_order(unsigned int page_count) {
   unsigned int order = 0;
@@ -202,6 +204,9 @@ void hw_update(int wait) {
   if(wait) {
     mdelay(CYCLE_TIME_US / 1000);
   }
+
+  debug_dump_ctrl();
+  debug_dump_samples();
 }
 
 void init_ctrl_data(void) {
@@ -307,3 +312,46 @@ inline uint32_t create_clear_mask(unsigned int sample) {
   return mask;
 }
 
+void debug_dump_ctrl(void) {
+  struct ctl *ctl = (struct ctl *)ctl_addr;
+  int i;
+  struct dma_cb *cbp = ctl->cb;
+
+  for (i = 0; i < NUM_SAMPLES; ++i) {
+    printk(KERN_INFO "DMA Control Block: #%d @0x%08x, \n", i, cbp);
+    printk(KERN_INFO "info:   0x%08x\n", cbp->info);
+    printk(KERN_INFO "src:    0x%08x\n", cbp->src);
+    printk(KERN_INFO "dst:    0x%08x\n", cbp->dst);
+    printk(KERN_INFO "length: 0x%08x\n", cbp->length);
+    printk(KERN_INFO "stride: 0x%08x\n", cbp->stride);
+    printk(KERN_INFO "next:   0x%08x\n", cbp->next);
+    ++cbp; // next control block
+  }
+
+  printk(KERN_INFO "pwm_reg: %p\n", pwm_reg);
+  printk(KERN_INFO "virt_to_bus(pwm_reg): %x\n", virt_to_bus(pwm_reg));
+  for (i=0; i<PWM_LEN/4; ++i) {
+    printk(KERN_INFO "%04x: 0x%08x 0x%08x\n", i, &pwm_reg[i], pwm_reg[i]);
+  }
+
+  printk(KERN_INFO "clk_reg: %p\n", clk_reg);
+  printk(KERN_INFO "virt_to_bus(clk_reg): %x\n", virt_to_bus(clk_reg));
+  for (i=0; i<CLK_LEN/4; ++i) {
+    printk(KERN_INFO "%04x: 0x%08x 0x%08x\n", i, &clk_reg[i], clk_reg[i]);
+  }
+
+  printk(KERN_INFO "dma_reg: %p\n", dma_reg);
+  printk(KERN_INFO "virt_to_bus(dma_reg): %x\n", virt_to_bus(dma_reg));
+  for (i=0; i<DMA_CHAN_SIZE/4; ++i) {
+    printk(KERN_INFO "%04x: 0x%08x 0x%08x\n", i, &dma_reg[i], dma_reg[i]);
+  }
+}
+
+void debug_dump_samples(void) {
+  struct ctl *ctl = (struct ctl *)ctl_addr;
+  int i;
+
+  for (i = 0; i < NUM_SAMPLES; ++i) {
+    printk(KERN_INFO "#%d @0x%08x, \n", i, ctl->sample[i]);
+  }
+}
