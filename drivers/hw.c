@@ -74,10 +74,12 @@ struct ctl {
 #define GPSET0             0x1c
 
 #define DMA_PHYS_BASE      (IO_PHYS_BASE + 0x00007000)
+#define DMA_BUS_BASE       (IO_BUS_BASE + 0x00007000)
 #define DMA_CHAN_NUM       14    // the DMA Channel we are using, NOTE: DMA Ch 0 seems to be used by X... better not use it ;)
 #define DMA_CHAN_SIZE      0x100 // size of register space for a single DMA channel
 #define DMA_CHAN_MAX       14    // number of DMA Channels we have... actually, there are 15... but channel fifteen is mapped at a different DMA_PHYS_BASE, so we leave that one alone
 #define DMA_PHYS_CHAN_BASE (DMA_PHYS_BASE + DMA_CHAN_NUM * DMA_CHAN_SIZE)
+#define DMA_BUS_CHAN_BASE  (DMA_BUS_BASE + DMA_CHAN_NUM * DMA_CHAN_SIZE)
 
 #define DMA_NO_WIDE_BURSTS  (1<<26)
 #define DMA_WAIT_RESP       (1<<3)
@@ -349,8 +351,8 @@ void debug_dump_ctrl(void) {
   }
 
   printk(KERN_INFO "dma_reg: %p\n", dma_reg);
-  printk(KERN_INFO "DMA_PHYS_BASE: %p\n", (void*)DMA_PHYS_BASE);
-  printk(KERN_INFO "DMA_BUS_BASE: %p\n", (void*)DMA_BUS_BASE);
+  printk(KERN_INFO "DMA_PHYS_CHAN_BASE: %p\n", (void*)DMA_PHYS_CHAN_BASE);
+  printk(KERN_INFO "DMA_BUS_CHAN_BASE: %p\n", (void*)DMA_BUS_CHAN_BASE);
   printk(KERN_INFO "virt_to_phys(dma_reg): %08x\n", virt_to_phys(dma_reg));
   printk(KERN_INFO "virt_to_bus(dma_reg): %08x\n", virt_to_bus(dma_reg));
   for (i=0; i<DMA_CHAN_SIZE/4; ++i) {
