@@ -6,6 +6,7 @@
 #include <linux/kernel.h>
 #include <linux/gpio.h>
 #include <linux/delay.h>
+#include <asm/io.h>
 
 #include "common.h"
 
