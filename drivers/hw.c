@@ -324,7 +324,7 @@ void debug_dump_ctrl(void) {
 
   printk(KERN_INFO "ctl: %p\n", ctl);
   printk(KERN_INFO "virt_to_phys(ctl): %p\n", (void *)virt_to_phys(ctl));
-  printk(KERN_INFO "virt_to_bus(ctl): %p\n", virt_to_bus(ctl));
+  printk(KERN_INFO "virt_to_bus(ctl): %p\n", (void *)virt_to_bus(ctl));
 
   for (i = 0; i < 4; ++i) {
     printk(KERN_INFO "DMA Control Block: #%d @%p, \n", i, cbp);
