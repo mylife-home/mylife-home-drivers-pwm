@@ -222,7 +222,6 @@ int item_unexport_locked(unsigned int gpio) {
     return -ENODEV;
   }
 
-  put_device(dev);
   device_unregister(dev);
   desc->dev = NULL;
 
