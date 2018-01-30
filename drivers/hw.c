@@ -206,7 +206,7 @@ void hw_update(int wait) {
   }
 
   debug_dump_ctrl();
-  debug_dump_samples();
+  //debug_dump_samples();
 }
 
 void init_ctrl_data(void) {
