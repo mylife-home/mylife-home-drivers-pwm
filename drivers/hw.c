@@ -167,9 +167,9 @@ int hw_init(void) {
 
 #define CHECK_MEM(x) if(!(x)) { memory_cleanup(); return -ENOMEM; }
 
-  CHECK_MEM(dma_reg = ioremap(DMA_PHYS_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT));
-  CHECK_MEM(pwm_reg = ioremap(PWM_PHYS_BASE, PWM_LEN, MEMREMAP_WT));
-  CHECK_MEM(clk_reg = ioremap(CLK_PHYS_BASE, CLK_LEN, MEMREMAP_WT));
+  CHECK_MEM(dma_reg = ioremap(DMA_PHYS_CHAN_BASE, DMA_CHAN_SIZE));
+  CHECK_MEM(pwm_reg = ioremap(PWM_PHYS_BASE, PWM_LEN));
+  CHECK_MEM(clk_reg = ioremap(CLK_PHYS_BASE, CLK_LEN));
   CHECK_MEM(ctl_addr = __get_free_pages(GFP_KERNEL, get_page_order(NUM_PAGES)));
 
 #undef CHECK_MEM
