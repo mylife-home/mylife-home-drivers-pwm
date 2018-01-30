@@ -318,7 +318,7 @@ void debug_dump_ctrl(void) {
   struct dma_cb *cbp = ctl->cb;
 
   for (i = 0; i < NUM_SAMPLES; ++i) {
-    printk(KERN_INFO "DMA Control Block: #%d @0x%08x, \n", i, cbp);
+    printk(KERN_INFO "DMA Control Block: #%d @%p, \n", i, cbp);
     printk(KERN_INFO "info:   0x%08x\n", cbp->info);
     printk(KERN_INFO "src:    0x%08x\n", cbp->src);
     printk(KERN_INFO "dst:    0x%08x\n", cbp->dst);
@@ -329,21 +329,21 @@ void debug_dump_ctrl(void) {
   }
 
   printk(KERN_INFO "pwm_reg: %p\n", pwm_reg);
-  printk(KERN_INFO "virt_to_bus(pwm_reg): %x\n", virt_to_bus(pwm_reg));
+  printk(KERN_INFO "virt_to_bus(pwm_reg): %08x\n", virt_to_bus(pwm_reg));
   for (i=0; i<PWM_LEN/4; ++i) {
-    printk(KERN_INFO "%04x: 0x%08x 0x%08x\n", i, &pwm_reg[i], pwm_reg[i]);
+    printk(KERN_INFO "%04x: 0x%08x 0x%08x\n", i, &((uint32_t*)pwm_reg)[i], ((uint32_t*)pwm_reg)[i]);
   }
 
   printk(KERN_INFO "clk_reg: %p\n", clk_reg);
-  printk(KERN_INFO "virt_to_bus(clk_reg): %x\n", virt_to_bus(clk_reg));
+  printk(KERN_INFO "virt_to_bus(clk_reg): %08x\n", virt_to_bus(clk_reg));
   for (i=0; i<CLK_LEN/4; ++i) {
-    printk(KERN_INFO "%04x: 0x%08x 0x%08x\n", i, &clk_reg[i], clk_reg[i]);
+    printk(KERN_INFO "%04x: 0x%08x 0x%08x\n", i, &((uint32_t*)clk_reg)[i], ((uint32_t*)clk_reg)[i]);
   }
 
   printk(KERN_INFO "dma_reg: %p\n", dma_reg);
-  printk(KERN_INFO "virt_to_bus(dma_reg): %x\n", virt_to_bus(dma_reg));
+  printk(KERN_INFO "virt_to_bus(dma_reg): %08x\n", virt_to_bus(dma_reg));
   for (i=0; i<DMA_CHAN_SIZE/4; ++i) {
-    printk(KERN_INFO "%04x: 0x%08x 0x%08x\n", i, &dma_reg[i], dma_reg[i]);
+    printk(KERN_INFO "%04x: 0x%08x 0x%08x\n", i, &((uint32_t*)dma_reg)[i], ((uint32_t*)dma_reg)[i]);
   }
 }
 
