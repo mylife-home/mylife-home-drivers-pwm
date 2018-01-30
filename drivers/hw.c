@@ -329,18 +329,21 @@ void debug_dump_ctrl(void) {
   }
 
   printk(KERN_INFO "pwm_reg: %p\n", pwm_reg);
+  printk(KERN_INFO "virt_to_phys(pwm_reg): %08x\n", virt_to_phys(pwm_reg));
   printk(KERN_INFO "virt_to_bus(pwm_reg): %08x\n", virt_to_bus(pwm_reg));
   for (i=0; i<PWM_LEN/4; ++i) {
     printk(KERN_INFO "%04x: %p 0x%08x\n", i, &((uint32_t*)pwm_reg)[i], ((uint32_t*)pwm_reg)[i]);
   }
 
   printk(KERN_INFO "clk_reg: %p\n", clk_reg);
+  printk(KERN_INFO "virt_to_phys(clk_reg): %08x\n", virt_to_phys(clk_reg));
   printk(KERN_INFO "virt_to_bus(clk_reg): %08x\n", virt_to_bus(clk_reg));
   for (i=0; i<CLK_LEN/4; ++i) {
     printk(KERN_INFO "%04x: %p 0x%08x\n", i, &((uint32_t*)clk_reg)[i], ((uint32_t*)clk_reg)[i]);
   }
 
   printk(KERN_INFO "dma_reg: %p\n", dma_reg);
+  printk(KERN_INFO "virt_to_phys(dma_reg): %08x\n", virt_to_phys(dma_reg));
   printk(KERN_INFO "virt_to_bus(dma_reg): %08x\n", virt_to_bus(dma_reg));
   for (i=0; i<DMA_CHAN_SIZE/4; ++i) {
     printk(KERN_INFO "%04x: %p 0x%08x\n", i, &((uint32_t*)dma_reg)[i], ((uint32_t*)dma_reg)[i]);
