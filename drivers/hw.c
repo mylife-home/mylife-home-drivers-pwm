@@ -126,17 +126,17 @@ void memory_cleanup(void) {
   }
 
   if(dma_reg) {
-    iounmap(dma_reg);
+    memunmap(dma_reg);
     dma_reg = NULL;
   }
 
   if(pwm_reg) {
-    iounmap(pwm_reg);
+    memunmap(pwm_reg);
     pwm_reg = NULL;
   }
 
   if(clk_reg) {
-    iounmap(clk_reg);
+    memunmap(clk_reg);
     clk_reg = NULL;
   }
 }
@@ -168,9 +168,9 @@ int hw_init(void) {
 
 #define CHECK_MEM(x) if(!(x)) { memory_cleanup(); return -ENOMEM; }
 
-  CHECK_MEM(dma_reg = ioremap(DMA_PHYS_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT));
-  CHECK_MEM(pwm_reg = ioremap(PWM_PHYS_BASE, PWM_LEN, MEMREMAP_WT));
-  CHECK_MEM(clk_reg = ioremap(CLK_PHYS_BASE, CLK_LEN, MEMREMAP_WT));
+  CHECK_MEM(dma_reg = memremap(DMA_PHYS_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT));
+  CHECK_MEM(pwm_reg = memremap(PWM_PHYS_BASE, PWM_LEN, MEMREMAP_WT));
+  CHECK_MEM(clk_reg = memremap(CLK_PHYS_BASE, CLK_LEN, MEMREMAP_WT));
   CHECK_MEM(ctl_addr = __get_free_pages(GFP_KERNEL, get_page_order(NUM_PAGES)));
 
 #undef CHECK_MEM
