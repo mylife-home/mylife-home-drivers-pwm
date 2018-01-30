@@ -6,7 +6,6 @@
 #include <linux/kernel.h>
 #include <linux/gpio.h>
 #include <linux/delay.h>
-#include <asm/io.h>
 
 #include "common.h"
 
@@ -98,6 +97,7 @@ static void *pwm_reg;
 
 static unsigned int get_page_order(unsigned int page_count);
 static void memory_cleanup(void);
+static uint32_t virt_to_bus(const void *addr);
 static void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value);
 static void write_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value, unsigned long usecs);
 static void init_ctrl_data(void);
@@ -133,6 +133,10 @@ void memory_cleanup(void) {
     memunmap(clk_reg);
     clk_reg = NULL;
   }
+}
+
+inline uint32_t virt_to_bus(const void *addr) {
+  return ((uint32_t)addr) & 0x7fffffff;
 }
 
 inline void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value) {
