@@ -270,7 +270,6 @@ void init_hardware(void) {
   write_reg_and_wait(dma_reg, DMA_CS, DMA_RESET, 10);
   write_reg(dma_reg, DMA_CS, DMA_INT | DMA_END);
   write_reg(dma_reg, DMA_CONBLK_AD, virt_to_bus(ctl->cb));
-printk(KERN_INFO "DMA_CONBLK_AD): %p\n", (void *)virt_to_bus(ctl->cb));
   write_reg(dma_reg, DMA_DEBUG, 7); // clear debug error flags
   write_reg(dma_reg, DMA_CS, 0x10880001); // go, mid priority, wait for outstanding writes
 }
