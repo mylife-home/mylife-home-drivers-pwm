@@ -142,7 +142,7 @@ void memory_cleanup(void) {
 }
 
 inline uint32_t virt_to_bus(const void *addr) {
-  return ((uint32_t)addr) & 0x7fffffff;
+  return virt_to_phys(addr) | 0xC0000000;
 }
 
 inline void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value) {
