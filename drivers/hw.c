@@ -56,6 +56,7 @@ struct ctl {
 #define CLK_OFFSET         0x00101000
 #define CLK_LEN            0xA8
 #define CLK_PHYS_BASE      (IO_PHYS_BASE + CLK_OFFSET)
+#define CLK_BUS_BASE       (IO_BUS_BASE  + CLK_OFFSET)
 
 #define PWMCLK_CNTL        40
 #define PWMCLK_DIV         41
