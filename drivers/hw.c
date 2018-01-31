@@ -383,7 +383,7 @@ void debug_dump_ctrl(void) {
   printk(KERN_INFO "DMA Control Block #0 : 0x%08x", virt_to_bus(cbp));
   printk(KERN_INFO "DMA Control Block #1999 : 0x%08x", virt_to_bus(cbp + 1999));
 
-  printk(KERN_INFO "dma_reg current cb: 0x%08x\n", ((char*)dma_reg + DMA_CHAN_OFFSET + DMA_CONBLK_AD));
+  printk(KERN_INFO "dma_reg current cb: 0x%08x\n", (uint32_t*)((char*)dma_reg + DMA_CHAN_OFFSET + DMA_CONBLK_AD)[0]);
 
 /*
   printk(KERN_INFO "pwm_reg: %p\n", pwm_reg);
