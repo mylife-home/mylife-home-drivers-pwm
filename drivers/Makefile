@@ -1,7 +1,7 @@
 # http://lxr.free-electrons.com/source/Documentation/kbuild/modules.txt
 
 obj-m = dma_pwm.o
-dma_pwm-y := management.o hw.o
+dma_pwm-y := management.o hw.o mbox.o
 ccflags-y := -D$(MYLIFE_ARCH)
 
 all:
