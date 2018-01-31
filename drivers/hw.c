@@ -200,14 +200,14 @@ int hw_init(void) {
     return status;
   }
 
-  ctl_phys_addr =
+  ctl_phys_addr = bus_to_phys(ctl_bus_addr);
 
 #define CHECK_MEM(x) if(!(x)) { memory_cleanup(); return -ENOMEM; }
 
   CHECK_MEM(dma_reg = memremap(DMA_PHYS_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT));
   CHECK_MEM(pwm_reg = memremap(PWM_PHYS_BASE, PWM_LEN, MEMREMAP_WT));
   CHECK_MEM(clk_reg = memremap(CLK_PHYS_BASE, CLK_LEN, MEMREMAP_WT));
-  CHECK_MEM(ctl_addr = memremap(ctl_bus_addr, NUM_PAGES * PAGE_SIZE, MEMREMAP_WB));
+  CHECK_MEM(ctl_addr = memremap(ctl_phys_addr, NUM_PAGES * PAGE_SIZE, MEMREMAP_WB));
 
 #undef CHECK_MEM
 
