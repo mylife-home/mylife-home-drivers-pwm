@@ -25,6 +25,8 @@ static ssize_t attr_store_locked(struct device *dev, struct device_attribute *at
 static ssize_t export_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
 static ssize_t unexport_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
 
+static ssize_t dump_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
+
 static int mod_init(void);
 static void mod_exit(void);
 
@@ -49,6 +51,7 @@ static const struct attribute_group dev_item = {
 static struct class_attribute dev_class_attrs[] = {
   __ATTR_WO(export),
   __ATTR_WO(unexport),
+  __ATTR_WO(dump),
   __ATTR_NULL,
 };
 
@@ -174,6 +177,12 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
   gpio_free(gpio);
   return len;
 }
+
+ssize_t dump_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len) {
+  hw_dump();
+  return len;
+}
+
 
 int item_export(unsigned int gpio) {
   int status;

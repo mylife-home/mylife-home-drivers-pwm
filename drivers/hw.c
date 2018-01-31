@@ -245,9 +245,6 @@ void hw_update(int wait) {
   if(wait) {
     mdelay(CYCLE_TIME_US / 1000);
   }
-
-  debug_dump_ctrl();
-  //debug_dump_samples();
 }
 
 void init_ctrl_data(void) {
@@ -351,6 +348,11 @@ inline uint32_t create_clear_mask(unsigned int sample) {
   }
 
   return mask;
+}
+
+void hw_dump(void) {
+  debug_dump_ctrl();
+  //debug_dump_samples();
 }
 
 void debug_dump_ctrl(void) {
