@@ -9,7 +9,7 @@
 #define MBOX_MEM_FLAG_ZERO (1 << 4)           // initialise buffer to all zeros
 #define MBOX_MEM_FLAG_NO_INIT (1 << 5)        // don't initialise (default is initialise to all ones
 #define MBOX_MEM_FLAG_HINT_PERMALOCK (1 << 6) // Likely to be locked for long periods of time.
-#define MBOX_MEM_FLAG_L1_NONALLOCATING (MEM_FLAG_DIRECT | MEM_FLAG_COHERENT) // Allocating in L2
+#define MBOX_MEM_FLAG_L1_NONALLOCATING (MBOX_MEM_FLAG_DIRECT | MBOX_MEM_FLAG_COHERENT) // Allocating in L2
 
 extern int mbox_init(void);
 
