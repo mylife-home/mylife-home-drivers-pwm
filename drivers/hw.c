@@ -97,6 +97,7 @@ struct ctl {
 #define DMA_DEBUG           0x20
 
 static void *ctl_addr;
+static uint32_t ctl_mbox_handle;
 static uint32_t ctl_bus_addr;
 static uint32_t ctl_phys_addr;
 static void *dma_reg;
@@ -106,6 +107,7 @@ static void *pwm_reg;
 static unsigned int get_page_order(unsigned int page_count);
 static void memory_cleanup(void);
 static uint32_t virt_to_bus(const void *addr);
+static uint32_t bus_to_phys(uint32_t bus_addr);
 static void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value);
 static void write_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value, unsigned long usecs);
 static void init_ctrl_data(void);
@@ -130,14 +132,14 @@ void memory_cleanup(void) {
     ctl_addr = NULL;
   }
 
-  if(ctl_phys_addr) {
-    mbox_mem_unlock(ctl_bus_addr);
-    ctl_phys_addr = 0;
+  if(ctl_bus_addr) {
+    mbox_mem_unlock(ctl_mbox_handle);
+    ctl_bus_addr = 0;
   }
 
-  if(ctl_bus_addr) {
-    mbox_mem_free(ctl_bus_addr);
-    ctl_bus_addr = 0;
+  if(ctl_mbox_handle) {
+    mbox_mem_free(ctl_mbox_handle);
+    ctl_mbox_handle = 0;
   }
 
   if(dma_reg) {
@@ -160,6 +162,10 @@ inline uint32_t virt_to_bus(const void *addr) {
   return virt_to_phys(addr) | 0xC0000000;
 }
 
+inline uint32_t bus_to_phys(uint32_t bus_addr) {
+  return bus_addr & ~0xC0000000;
+}
+
 inline void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value) {
   volatile char *addr = reg_base_addr;
   addr += reg_offset;
@@ -175,7 +181,7 @@ int hw_init(void) {
 
   int status;
   ctl_addr = NULL;
-  ctl_phys_addr = 0;
+  ctl_mbox_handle = 0;
   ctl_bus_addr = 0;
   dma_reg = NULL;
   pwm_reg = NULL;
@@ -184,22 +190,24 @@ int hw_init(void) {
   printk(KERN_INFO "DMA Channel:   %5d\n", DMA_CHAN_NUM);
   printk(KERN_INFO "PWM frequency: %5d Hz\n", 1000000 / CYCLE_TIME_US);
 
-  if((status = mbox_mem_alloc(NUM_PAGES * PAGE_SIZE, PAGE_SIZE, MBOX_MEM_FLAG_L1_NONALLOCATING | MBOX_MEM_FLAG_ZERO, &ctl_bus_addr)) < 0) {
+  if((status = mbox_mem_alloc(NUM_PAGES * PAGE_SIZE, PAGE_SIZE, MBOX_MEM_FLAG_L1_NONALLOCATING | MBOX_MEM_FLAG_ZERO, &ctl_mbox_handle)) < 0) {
     memory_cleanup();
     return status;
   }
 
-  if((status = mbox_mem_lock(ctl_bus_addr, &ctl_phys_addr)) < 0) {
+  if((status = mbox_mem_lock(ctl_mbox_handle, &ctl_bus_addr)) < 0) {
     memory_cleanup();
     return status;
   }
+
+  ctl_phys_addr =
 
 #define CHECK_MEM(x) if(!(x)) { memory_cleanup(); return -ENOMEM; }
 
   CHECK_MEM(dma_reg = memremap(DMA_PHYS_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT));
   CHECK_MEM(pwm_reg = memremap(PWM_PHYS_BASE, PWM_LEN, MEMREMAP_WT));
   CHECK_MEM(clk_reg = memremap(CLK_PHYS_BASE, CLK_LEN, MEMREMAP_WT));
-  CHECK_MEM(ctl_addr = memremap(ctl_phys_addr, NUM_PAGES * PAGE_SIZE, MEMREMAP_WB));
+  CHECK_MEM(ctl_addr = memremap(ctl_bus_addr, NUM_PAGES * PAGE_SIZE, MEMREMAP_WB));
 
 #undef CHECK_MEM
 
