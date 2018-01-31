@@ -197,17 +197,17 @@ ssize_t delay_type_show(struct class *class, struct class_attribute *attr, char 
 
 ssize_t debug_dump_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len) {
 
-  if(strcmp(buf, "registers") == 0) {
+  if(strcmp(buf, "registers\n") == 0) {
     hw_dump_registers();
     return len;
   }
 
-  if(strcmp(buf, "dmacb") == 0) {
+  if(strcmp(buf, "dmacb\n") == 0) {
     hw_dump_dmacb();
     return len;
   }
 
-  if(strcmp(buf, "samples") == 0) {
+  if(strcmp(buf, "samples\n") == 0) {
     hw_dump_samples();
     return len;
   }
