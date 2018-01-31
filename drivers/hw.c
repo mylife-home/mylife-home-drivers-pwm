@@ -510,6 +510,6 @@ void hw_dump_samples(void) {
   int i;
 
   for (i = 0; i < NUM_SAMPLES; ++i) {
-    printk(KERN_INFO "#%d @0x%08x, \n", i, ctl->sample[i]);
+    printk(KERN_INFO "#%d 0x%08x\n", i, ctl->sample[i]);
   }
 }
