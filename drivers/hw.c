@@ -296,11 +296,17 @@ void init_hardware(void) {
   write_reg_and_wait(pwm_reg, PWM_CTL, 0, 10);
   write_reg_and_wait(pwm_reg, PWM_STA, read_reg(pwm_reg, PWM_STA), 10);
 
+  //write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000000, 100);
+  //write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000, 100);
+  //write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000006, 100); // Source=PLLD (500MHz)
+  //write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000 | (500<<12), 100); // set pwm div to 500, giving 1MHz
+  //write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000016, 100); // Source=PLLD and enable
+
   write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000000, 100);
   write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000, 100);
-  write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000006, 100); // Source=PLLD (500MHz)
-  write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000 | (500<<12), 100); // set pwm div to 500, giving 1MHz
-  write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000016, 100); // Source=PLLD and enable
+  write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000001, 100);              // Source=osc
+  write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000 | (32<<12), 500);    // set pwm div to 32 (19.2MHz/32 = 600KHz)
+  write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000011, 100);              // Source=osc and enable
 
   write_reg_and_wait(pwm_reg, PWM_RNG1, SAMPLE_US, 10);
   write_reg_and_wait(pwm_reg, PWM_DMAC, PWMDMAC_ENAB | PWMDMAC_THRSHLD, 10);
