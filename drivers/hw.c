@@ -96,6 +96,9 @@ struct ctl {
 #define DMA_CONBLK_AD       0x04
 #define DMA_DEBUG           0x20
 
+// 0xfe0 INT_STATUS Interrupt status of each DMA channel 32
+// 0xff0 ENABLE Global enable bits for each DMA channel 32
+
 static void *ctl_addr;
 static uint32_t ctl_mbox_handle;
 static uint32_t ctl_bus_addr;
@@ -261,11 +264,20 @@ void init_ctrl_data(void) {
     cbp->stride = 0;
     cbp->next = virt_to_bus(cbp + 1);
     ++cbp;
-
+/*
     // Second DMA command
     cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP | DMA_D_DREQ | DMA_PER_MAP(5);
     cbp->src = virt_to_bus(ctl); // Any data will do
     cbp->dst = PWM_BUS_BASE + PWM_FIFO;
+    cbp->length = sizeof(uint32_t);
+    cbp->stride = 0;
+    cbp->next = virt_to_bus(cbp + 1);
+    ++cbp;
+*/
+    // First DMA command
+    cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP;
+    cbp->src = virt_to_bus(ctl->sample + sample);
+    cbp->dst = GPIO_BUS_BASE + GPCLR0;
     cbp->length = sizeof(uint32_t);
     cbp->stride = 0;
     cbp->next = virt_to_bus(cbp + 1);
