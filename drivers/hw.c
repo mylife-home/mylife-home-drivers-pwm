@@ -216,10 +216,6 @@ int hw_init(void) {
   init_hardware();
   hw_update(0);
 
-  printk(KERN_INFO "ctl_addr: %p\n", ctl_addr);
-  printk(KERN_INFO "virt_to_bus(ctl_addr): %p\n", (void *)virt_to_bus(ctl_addr));
-  printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
-
   return 0;
 }
 
@@ -250,7 +246,7 @@ void hw_update(int wait) {
     mdelay(CYCLE_TIME_US / 1000);
   }
 
-  //debug_dump_ctrl();
+  debug_dump_ctrl();
   //debug_dump_samples();
 }
 
@@ -368,6 +364,8 @@ void debug_dump_ctrl(void) {
   printk(KERN_INFO "virt_to_bus(ctl): %p\n", (void *)virt_to_bus(ctl));
   printk(KERN_INFO "ctl_phys_addr: %p\n", (void *)ctl_phys_addr);
   printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
+
+return;
 
   for (i = 0; i < 4; ++i) {
     printk(KERN_INFO "DMA Control Block: #%d @%p, \n", i, cbp);
