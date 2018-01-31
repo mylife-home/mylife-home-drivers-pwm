@@ -110,6 +110,7 @@ static void *pwm_reg;
 static void memory_cleanup(void);
 static uint32_t virt_to_bus(const void *addr);
 static uint32_t bus_to_phys(uint32_t bus_addr);
+static uint32_t read_reg(volatile void *reg_base_addr, uint32_t reg_offset);
 static void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value);
 static void write_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value, unsigned long usecs);
 static void init_ctrl_data(void);
@@ -159,6 +160,12 @@ inline uint32_t virt_to_bus(const void *addr) {
 
 inline uint32_t bus_to_phys(uint32_t bus_addr) {
   return bus_addr & ~0xC0000000;
+}
+
+inline uint32_t read_reg(volatile void *reg_base_addr, uint32_t reg_offset) {
+  volatile char *addr = reg_base_addr;
+  addr += reg_offset;
+  return * ((volatile uint32_t *)addr);
 }
 
 inline void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value) {
@@ -286,6 +293,7 @@ void init_hardware(void) {
 
   // Initialize PWM
   write_reg_and_wait(pwm_reg, PWM_CTL, 0, 10);
+  write_reg_and_wait(pwm_reg, PWM_STA, read_reg(pwm_reg, PWM_STA), 10);
   write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000006, 100); // Source=PLLD (500MHz)
   write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000 | (500<<12), 100); // set pwm div to 500, giving 1MHz
   write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000016, 100); // Source=PLLD and enable
