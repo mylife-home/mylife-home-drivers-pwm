@@ -24,8 +24,8 @@ static ssize_t attr_show_locked(struct device *dev, struct device_attribute *att
 static ssize_t attr_store_locked(struct device *dev, struct device_attribute *attr, const char *buf, size_t size);
 static ssize_t export_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
 static ssize_t unexport_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
-
-static ssize_t dump_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
+static ssize_t delay_type_show(struct device *dev, struct device_attribute *attr, char *buf);
+static ssize_t debug_dump_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
 
 static int mod_init(void);
 static void mod_exit(void);
@@ -33,6 +33,10 @@ static void mod_exit(void);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Vincent TRUMPFF");
 MODULE_DESCRIPTION("Driver for DMA PWM");
+
+static char *hw_delay_type = "pcm";
+module_param(hw_delay_type, char*, 0444);
+MODULE_PARM_DESC(hw_delay_type, "Type of HW device used for delays (supported : pcm,pwm)");
 
 module_init(mod_init);
 module_exit(mod_exit);
@@ -51,7 +55,8 @@ static const struct attribute_group dev_item = {
 static struct class_attribute dev_class_attrs[] = {
   __ATTR_WO(export),
   __ATTR_WO(unexport),
-  __ATTR_WO(dump),
+  __ATTR_RO(delay_type),
+  __ATTR_WO(debug_dump),
   __ATTR_NULL,
 };
 
@@ -92,7 +97,7 @@ ssize_t attr_show_locked(struct device *dev, struct device_attribute *attr, char
   }
 
   if(strcmp(attr->attr.name, "value") == 0) {
-    return sprintf(buf, "%d\n", desc->value);
+    return snprintf(buf, PAGE_SIZE, "%d\n", desc->value);
   }
 
   return -EIO;
@@ -178,11 +183,37 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
   return len;
 }
 
-ssize_t dump_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len) {
-  hw_dump();
-  return len;
+ssize_t delay_type_show(struct device *dev, struct device_attribute *attr, char *buf) {
+  switch(delay_type) {
+  case DELAY_PCM:
+    return strscpy(buf, "pcm\n", PAGE_SIZE);
+
+  case DELAY_PWM:
+    return strscpy(buf, "pwm\n", PAGE_SIZE);
+  }
+
+  return -EFAULT;
 }
 
+ssize_t debug_dump_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len) {
+
+  if(strncmp(buf, "registers", len) == 0) {
+    hw_dump_registers();
+    return len;
+  }
+
+  if(strncmp(buf, "dmacb", len) == 0) {
+    hw_dump_dmacb();
+    return len;
+  }
+
+  if(strncmp(buf, "samples", len) == 0) {
+    hw_dump_samples();
+    return len;
+  }
+
+  return -EINVAL;
+}
 
 int item_export(unsigned int gpio) {
   int status;
@@ -242,6 +273,14 @@ int item_unexport_locked(unsigned int gpio) {
 
 int __init mod_init(void) {
   int status;
+
+  if(strcmp(hw_delay_type, "pcm") == 0) {
+    delay_type = DELAY_PCM;
+  } else if if(strcmp(hw_delay_type, "pwm") == 0) {
+    delay_type = DELAY_PWM;
+  } else {
+    return -EINVAL;
+  }
 
   if((status = mbox_init()) < 0) {
     return status;

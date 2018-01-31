@@ -29,12 +29,7 @@
 #define NUM_SAMPLES   (CYCLE_TIME_US / SAMPLE_US)
 #define NUM_CBS       (NUM_SAMPLES * 2)
 
-enum delay_type {
-  DELAY_PCM,
-  DELAY_PWM
-};
-
-static enum delay_type delay_type = DELAY_PWM;
+enum delay_type delay_type;
 
 struct dma_cb {
   uint32_t info;
@@ -152,8 +147,6 @@ static void init_ctrl_data(void);
 static void init_hardware(void);
 static uint32_t create_set_mask(void);
 static uint32_t create_clear_mask(unsigned int sample);
-static void debug_dump_ctrl(void);
-static void debug_dump_samples(void);
 
 void memory_cleanup(void) {
 
@@ -230,9 +223,10 @@ inline void or_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, u
   udelay(usecs);
 }
 
-int hw_init(void) {
+int hw_init(enum delay_type dt) {
 
   int status;
+  delay_type = dt;
   ctl_addr = NULL;
   ctl_mbox_handle = 0;
   ctl_bus_addr = 0;
@@ -461,16 +455,9 @@ inline uint32_t create_clear_mask(unsigned int sample) {
   return mask;
 }
 
-void hw_dump(void) {
-  debug_dump_ctrl();
-  //debug_dump_samples();
-}
-
-void debug_dump_ctrl(void) {
-
+void hw_dump_registers(void) {
   struct ctl *ctl = ctl_addr;
   int i;
-  struct dma_cb *cbp = ctl->cb;
 
   printk(KERN_INFO "ctl: %p\n", ctl);
   printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
@@ -502,7 +489,24 @@ void debug_dump_ctrl(void) {
   }
 }
 
-void debug_dump_samples(void) {
+void hw_dump_dmacb(void) {
+  struct ctl *ctl = ctl_addr;
+  int i;
+  struct dma_cb *cbp = ctl->cb;
+
+  for (i = 0; i < NUM_SAMPLES * 2; i++) {
+    printf("DMA Control Block: #%d @0x%px, bus=0x%08x\n", i, cbp, virt_to_bus(cbp));
+    printf("info:   0x%08x\n", cbp->info);
+    printf("src:    0x%08x\n", cbp->src);
+    printf("dst:    0x%08x\n", cbp->dst);
+    printf("length: 0x%08x\n", cbp->length);
+    printf("stride: 0x%08x\n", cbp->stride);
+    printf("next:   0x%08x\n", cbp->next);
+    cbp++; // next control block
+  }
+}
+
+void hw_dump_samples(void) {
   struct ctl *ctl = ctl_addr;
   int i;
 
