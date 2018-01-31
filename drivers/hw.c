@@ -275,6 +275,10 @@ void init_ctrl_data(void) {
   // point to the first
   --cbp;
   cbp->next = virt_to_bus(ctl->cb);
+
+
+  // FIXME
+  ctl->cb[1000].next = virt_to_bus(ctl->cb);;
 }
 
 void init_hardware(void) {
