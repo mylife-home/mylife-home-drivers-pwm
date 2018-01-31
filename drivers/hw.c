@@ -212,8 +212,8 @@ int hw_init(void) {
 
 #undef CHECK_MEM
 
-  printk(KERN_INFO "ctl: %p\n", ctl);
-  printk(KERN_INFO "virt_to_bus(ctl): %p\n", (void *)virt_to_bus(ctl));
+  printk(KERN_INFO "ctl_addr: %p\n", ctl_addr);
+  printk(KERN_INFO "virt_to_bus(ctl_addr): %p\n", (void *)virt_to_bus(ctl_addr));
   printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
 
   init_ctrl_data();
