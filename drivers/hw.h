@@ -8,7 +8,7 @@ enum delay_type {
 
 extern enum delay_type delay_type;
 
-extern int hw_init(enum delay_type dt);
+extern int hw_init(void); // delay_type MUST be set before
 extern void hw_exit(void);
 extern void hw_update(int wait);
 extern void hw_dump_registers(void);

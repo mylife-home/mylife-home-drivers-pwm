@@ -223,10 +223,9 @@ inline void or_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, u
   udelay(usecs);
 }
 
-int hw_init(enum delay_type dt) {
-
+int hw_init() {
   int status;
-  delay_type = dt;
+
   ctl_addr = NULL;
   ctl_mbox_handle = 0;
   ctl_bus_addr = 0;
