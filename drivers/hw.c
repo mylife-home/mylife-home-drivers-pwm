@@ -402,9 +402,6 @@ void init_hardware(void) {
     write_reg(pwm_reg, PWM_DMAC, 0); //disable DMA
     or_reg_and_wait(pwm_reg,  PWM_CTL, PWM_CTL_CLRF, 100); //clear pwm
     write_reg_and_wait(pwm_reg, PWM_STA, PWM_STA_ERRS, 100); //clear PWM errors
-
-    pwmHeader->CTL = PWM_CTL_REPEATEMPTY1 | PWM_CTL_ENABLE1 | PWM_CTL_USEFIFO1;
-
     write_reg_and_wait(pwm_reg, PWM_DMAC, PWM_DMAC_ENAB | PWM_DMAC_THRSHLD, 10);
     write_reg_and_wait(pwm_reg, PWM_RNG1, SAMPLE_US, 10);
     write_reg_and_wait(pwm_reg, PWM_CTL, PWM_CTL_USEF1 | PWM_CTL_PWEN1 | PWM_CTL_REPEATEMPTY1, 10);
