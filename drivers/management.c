@@ -276,7 +276,7 @@ int __init mod_init(void) {
 
   if(strcmp(hw_delay_type, "pcm") == 0) {
     delay_type = DELAY_PCM;
-  } else if if(strcmp(hw_delay_type, "pwm") == 0) {
+  } else if(strcmp(hw_delay_type, "pwm") == 0) {
     delay_type = DELAY_PWM;
   } else {
     return -EINVAL;
