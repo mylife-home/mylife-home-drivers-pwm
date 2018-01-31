@@ -355,14 +355,14 @@ void debug_dump_ctrl(void) {
   printk(KERN_INFO "ctl: %p\n", ctl);
   printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
 
-  for (i = 990; i < NUM; ++i) {
-    printk(KERN_INFO "DMA Control Block: #%d @%p, \n", i, cbp);
-    printk(KERN_INFO "info:   0x%08x\n", cbp->info);
-    printk(KERN_INFO "src:    0x%08x\n", cbp->src);
-    printk(KERN_INFO "dst:    0x%08x\n", cbp->dst);
-    printk(KERN_INFO "length: 0x%08x\n", cbp->length);
-    printk(KERN_INFO "stride: 0x%08x\n", cbp->stride);
-    printk(KERN_INFO "next:   0x%08x\n", cbp->next);
+  for (i = 0; i < NUM_SAMPLES * 2; ++i) {
+    printk(KERN_INFO "DMA Control Block: #%d @%p bus @%08x next @%08x, \n", i, cbp, virt_to_bus(cbp), cbp->next);
+//    printk(KERN_INFO "info:   0x%08x\n", cbp->info);
+//    printk(KERN_INFO "src:    0x%08x\n", cbp->src);
+//    printk(KERN_INFO "dst:    0x%08x\n", cbp->dst);
+//    printk(KERN_INFO "length: 0x%08x\n", cbp->length);
+//    printk(KERN_INFO "stride: 0x%08x\n", cbp->stride);
+//    printk(KERN_INFO "next:   0x%08x\n", cbp->next);
     ++cbp; // next control block
   }
 
