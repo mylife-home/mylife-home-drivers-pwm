@@ -35,7 +35,7 @@ MODULE_AUTHOR("Vincent TRUMPFF");
 MODULE_DESCRIPTION("Driver for DMA PWM");
 
 static char *hw_delay_type = "pcm";
-module_param(hw_delay_type, char*, 0444);
+module_param(hw_delay_type, charp, 0444);
 MODULE_PARM_DESC(hw_delay_type, "Type of HW device used for delays (supported : pcm,pwm)");
 
 module_init(mod_init);
