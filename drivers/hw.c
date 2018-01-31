@@ -360,12 +360,7 @@ void debug_dump_ctrl(void) {
   struct dma_cb *cbp = ctl->cb;
 
   printk(KERN_INFO "ctl: %p\n", ctl);
-  printk(KERN_INFO "virt_to_phys(ctl): %p\n", (void *)virt_to_phys(ctl));
-  printk(KERN_INFO "virt_to_bus(ctl): %p\n", (void *)virt_to_bus(ctl));
-  printk(KERN_INFO "ctl_phys_addr: %p\n", (void *)ctl_phys_addr);
   printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
-
-return;
 
   for (i = 0; i < 4; ++i) {
     printk(KERN_INFO "DMA Control Block: #%d @%p, \n", i, cbp);
