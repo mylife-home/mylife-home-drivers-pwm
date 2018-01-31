@@ -67,6 +67,7 @@ inline int mbox_property(void *data, size_t tag_size) {
 
 int mbox_mem_alloc(uint32_t size, uint32_t align, uint32_t flags, uint32_t *handle) {
   struct mbox_msg_alloc msg;
+  int ret;
 
   MBOX_MSG_INIT(msg, RPI_FIRMWARE_ALLOCATE_MEMORY);
   msg.payload.size = size;
@@ -92,6 +93,7 @@ int mbox_mem_free(uint32_t handle) {
 
 int mbox_mem_lock(uint32_t handle, uint32_t *phys_addr) {
   struct mbox_msg_handle msg;
+  int ret;
 
   MBOX_MSG_INIT(msg, RPI_FIRMWARE_LOCK_MEMORY);
   msg.payload.handle = handle;
