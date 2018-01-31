@@ -81,8 +81,8 @@ struct ctl {
 #define DMA_CHAN_NUM       14    // the DMA Channel we are using, NOTE: DMA Ch 0 seems to be used by X... better not use it ;)
 #define DMA_CHAN_SIZE      0x100 // size of register space for a single DMA channel
 #define DMA_CHAN_MAX       14    // number of DMA Channels we have... actually, there are 15... but channel fifteen is mapped at a different DMA_PHYS_BASE, so we leave that one alone
-#define DMA_PHYS_CHAN_BASE (DMA_PHYS_BASE + DMA_CHAN_NUM * DMA_CHAN_SIZE)
-#define DMA_BUS_CHAN_BASE  (DMA_BUS_BASE + DMA_CHAN_NUM * DMA_CHAN_SIZE)
+#define DMA_LEN            0x1000
+#define DMA_CHAN_OFFSET    (DMA_CHAN_NUM * DMA_CHAN_SIZE)
 
 #define DMA_NO_WIDE_BURSTS  (1<<26)
 #define DMA_WAIT_RESP       (1<<3)
@@ -196,7 +196,7 @@ int hw_init(void) {
 
 #define CHECK_MEM(x) if(!(x)) { memory_cleanup(); return -ENOMEM; }
 
-  CHECK_MEM(dma_reg = memremap(DMA_PHYS_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT));
+  CHECK_MEM(dma_reg = memremap(DMA_PHYS_BASE, DMA_LEN, MEMREMAP_WT));
   CHECK_MEM(pwm_reg = memremap(PWM_PHYS_BASE, PWM_LEN, MEMREMAP_WT));
   CHECK_MEM(clk_reg = memremap(CLK_PHYS_BASE, CLK_LEN, MEMREMAP_WT));
   CHECK_MEM(ctl_addr = memremap(ctl_phys_addr, NUM_PAGES * PAGE_SIZE, MEMREMAP_WB));
@@ -212,7 +212,7 @@ int hw_init(void) {
 
 void hw_exit(void) {
 
-  write_reg_and_wait(dma_reg, DMA_CS, DMA_RESET, 10);
+  write_reg_and_wait(dma_reg, DMA_CHAN_OFFSET + DMA_CS, DMA_RESET, 10);
 
   memory_cleanup();
 }
@@ -296,11 +296,11 @@ void init_hardware(void) {
   write_reg_and_wait(pwm_reg, PWM_CTL, PWMCTL_USEF1 | PWMCTL_PWEN1, 10);
 
   // Initialize the DMA
-  write_reg_and_wait(dma_reg, DMA_CS, DMA_RESET, 10);
-  write_reg(dma_reg, DMA_CS, DMA_INT | DMA_END);
-  write_reg(dma_reg, DMA_CONBLK_AD, virt_to_bus(ctl->cb));
-  write_reg(dma_reg, DMA_DEBUG, 7); // clear debug error flags
-  write_reg(dma_reg, DMA_CS, 0x10880001); // go, mid priority, wait for outstanding writes
+  write_reg_and_wait(dma_reg, DMA_CHAN_OFFSET + DMA_CS, DMA_RESET, 10);
+  write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CS, DMA_INT | DMA_END);
+  write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CONBLK_AD, virt_to_bus(ctl->cb));
+  write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_DEBUG, 7); // clear debug error flags
+  write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CS, 0x10880001); // go, mid priority, wait for outstanding writes
 }
 
 inline uint32_t create_set_mask(void) {
@@ -380,9 +380,9 @@ void debug_dump_ctrl(void) {
     printk(KERN_INFO "%04x: 0x%08x\n", i * 4, ((uint32_t*)clk_reg)[i]);
   }
 
-  printk(KERN_INFO "dma_reg: %p\n", dma_reg);
+  printk(KERN_INFO "dma_reg: %p\n", (char*)dma_reg + DMA_CHAN_OFFSET);
   for (i=0; i<DMA_CHAN_SIZE/4; ++i) {
-    printk(KERN_INFO "%04x: 0x%08x\n", i * 4, ((uint32_t*)dma_reg)[i]);
+    printk(KERN_INFO "%04x: 0x%08x\n", i * 4, ((uint32_t*)((char*)dma_reg + DMA_CHAN_OFFSET))[i]);
   }
 }
 
