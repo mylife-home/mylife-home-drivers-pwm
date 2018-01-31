@@ -311,7 +311,7 @@ void init_hardware(void) {
   write_reg_and_wait(dma_reg, DMA_CHAN_OFFSET + DMA_CS, DMA_RESET, 10);
   write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CS, DMA_INT | DMA_END);
   write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CONBLK_AD, virt_to_bus(ctl->cb));
-  write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_DEBUG, 7); // clear debug error flags
+  write_reg_and_wait(dma_reg, DMA_CHAN_OFFSET + DMA_DEBUG, 7, 10); // clear debug error flags
   write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CS, 0x10880001); // go, mid priority, wait for outstanding writes
 }
 
