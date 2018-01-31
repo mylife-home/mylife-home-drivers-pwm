@@ -373,9 +373,9 @@ void init_hardware(void) {
     // Initialize PCM
     write_reg_and_wait(pcm_reg, PCM_CS_A, 1, 100); // Disable Rx+Tx, Enable PCM block
 
-    write_reg_and_wait(clk_reg[PCMCLK_CNTL] = 0x5A000006, 100); // Source=PLLD (500MHz)
-    write_reg_and_wait(clk_reg[PCMCLK_DIV] = 0x5A000000 | (500<<12), 100); // Set pcm div to 500, giving 1MHz
-    write_reg_and_wait(clk_reg[PCMCLK_CNTL] = 0x5A000016, 100); // Source=PLLD and enable
+    write_reg_and_wait(clk_reg, PCMCLK_CNTL, 0x5A000006, 100); // Source=PLLD (500MHz)
+    write_reg_and_wait(clk_reg, PCMCLK_DIV, 0x5A000000 | (500<<12), 100); // Set pcm div to 500, giving 1MHz
+    write_reg_and_wait(clk_reg, PCMCLK_CNTL, 0x5A000016, 100); // Source=PLLD and enable
 
     write_reg_and_wait(pcm_reg, PCM_TXC_A, 0<<31 | 1<<30 | 0<<20 | 0<<16, 100); // 1 channel, 8 bits
     write_reg_and_wait(pcm_reg, PCM_MODE_A, (SAMPLE_US - 1) << 10, 100);
