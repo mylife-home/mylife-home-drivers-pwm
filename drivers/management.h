@@ -1,5 +1,5 @@
-#ifndef __MYLIFE_DMA_PWM_COMMON_H__
-#define __MYLIFE_DMA_PWM_COMMON_H__
+#ifndef __MYLIFE_DMA_PWM_MANAGEMENT_H__
+#define __MYLIFE_DMA_PWM_MANAGEMENT_H__
 
 struct item_desc {
   struct device *dev;  // corresponding sysfs device
@@ -10,8 +10,4 @@ struct item_desc {
 
 extern struct item_desc item_table[ARCH_NR_GPIOS];
 
-extern int hw_init(void);
-extern void hw_exit(void);
-extern void hw_update(int wait);
-
-#endif // __MYLIFE_DMA_PWM_COMMON_H__
+#endif // __MYLIFE_DMA_PWM_MANAGEMENT_H__

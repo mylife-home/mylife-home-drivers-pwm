@@ -6,7 +6,9 @@
 #include <linux/kdev_t.h>
 #include <linux/gpio.h>
 
-#include "common.h"
+#include "management.h"
+#include "hw.h"
+#include "mbox.h"
 
 struct item_desc item_table[ARCH_NR_GPIOS];
 
@@ -231,6 +233,10 @@ int item_unexport_locked(unsigned int gpio) {
 
 int __init mod_init(void) {
   int status;
+
+  if((status = mbox_init()) < 0) {
+    return status;
+  }
 
   if((status = class_register(&dev_class)) < 0) {
     return status;

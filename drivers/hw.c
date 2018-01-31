@@ -8,7 +8,9 @@
 #include <linux/gpio.h>
 #include <linux/delay.h>
 
-#include "common.h"
+#include "management.h"
+#include "hw.h"
+#include "mbox.h"
 
 // TODO: use device tree : xxd /proc/device-tree/soc/ranges (2nd word)
 #if   defined (MYLIFE_ARCH_RPI1)
@@ -94,7 +96,9 @@ struct ctl {
 #define DMA_CONBLK_AD       0x04
 #define DMA_DEBUG           0x20
 
-static unsigned long ctl_addr;
+static void *ctl_addr;
+static uint32_t ctl_bus_addr;
+static uint32_t ctl_phys_addr;
 static void *dma_reg;
 static void *clk_reg;
 static void *pwm_reg;
@@ -120,9 +124,20 @@ inline unsigned int get_page_order(unsigned int page_count) {
 }
 
 void memory_cleanup(void) {
+
   if(ctl_addr) {
-    free_pages(ctl_addr, get_page_order(NUM_PAGES));
-    ctl_addr = 0;
+    memunmap(ctl_addr);
+    ctl_addr = NULL;
+  }
+
+  if(ctl_phys_addr) {
+    mbox_mem_unlock(ctl_bus_addr);
+    ctl_phys_addr = 0;
+  }
+
+  if(ctl_bus_addr) {
+    mbox_mem_free(ctl_bus_addr);
+    ctl_bus_addr = 0;
   }
 
   if(dma_reg) {
@@ -158,7 +173,10 @@ void write_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint3
 
 int hw_init(void) {
 
-  ctl_addr = 0;
+  int status;
+  ctl_addr = NULL;
+  ctl_phys_addr = 0;
+  ctl_bus_addr = 0;
   dma_reg = NULL;
   pwm_reg = NULL;
   clk_reg = NULL;
@@ -166,12 +184,22 @@ int hw_init(void) {
   printk(KERN_INFO "DMA Channel:   %5d\n", DMA_CHAN_NUM);
   printk(KERN_INFO "PWM frequency: %5d Hz\n", 1000000 / CYCLE_TIME_US);
 
+  if((status = mbox_mem_alloc(NUM_PAGES * PAGE_SIZE, PAGE_SIZE, MBOX_MEM_FLAG_L1_NONALLOCATING | MBOX_MEM_FLAG_ZERO, &ctl_bus_addr)) < 0) {
+    memory_cleanup();
+    return status;
+  }
+
+  if((status = mbox_mem_lock(ctl_bus_addr, &ctl_phys_addr)) < 0) {
+    memory_cleanup();
+    return status;
+  }
+
 #define CHECK_MEM(x) if(!(x)) { memory_cleanup(); return -ENOMEM; }
 
   CHECK_MEM(dma_reg = memremap(DMA_PHYS_CHAN_BASE, DMA_CHAN_SIZE, MEMREMAP_WT));
   CHECK_MEM(pwm_reg = memremap(PWM_PHYS_BASE, PWM_LEN, MEMREMAP_WT));
   CHECK_MEM(clk_reg = memremap(CLK_PHYS_BASE, CLK_LEN, MEMREMAP_WT));
-  CHECK_MEM(ctl_addr = __get_free_pages(GFP_KERNEL, get_page_order(NUM_PAGES)));
+  CHECK_MEM(ctl_addr = memremap(ctl_phys_addr, NUM_PAGES * PAGE_SIZE, MEMREMAP_WB));
 
 #undef CHECK_MEM
 
@@ -191,7 +219,7 @@ void hw_exit(void) {
 
 void hw_update(int wait) {
 
-  struct ctl *ctl = (struct ctl *)ctl_addr;
+  struct ctl *ctl = ctl_addr;
   int sample;
 
   // First we turn on the channels that need to be on
@@ -215,7 +243,7 @@ void hw_update(int wait) {
 
 void init_ctrl_data(void) {
 
-  struct ctl *ctl = (struct ctl *)ctl_addr;
+  struct ctl *ctl = ctl_addr;
   struct dma_cb *cbp = ctl->cb;
   int sample;
 
@@ -230,31 +258,31 @@ void init_ctrl_data(void) {
 
     // First DMA command
     cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP;
-    cbp->src = virt_to_bus(ctl->sample + sample);
+    cbp->src = virt_to_phys(ctl->sample + sample);
     cbp->dst = GPIO_BUS_BASE + GPCLR0;
     cbp->length = sizeof(uint32_t);
     cbp->stride = 0;
-    cbp->next = virt_to_bus(cbp + 1);
+    cbp->next = virt_to_phys(cbp + 1);
     ++cbp;
 
     // Second DMA command
     cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP | DMA_D_DREQ | DMA_PER_MAP(5);
-    cbp->src = virt_to_bus(ctl); // Any data will do
+    cbp->src = virt_to_phys(ctl); // Any data will do
     cbp->dst = PWM_BUS_BASE + PWM_FIFO;
     cbp->length = sizeof(uint32_t);
     cbp->stride = 0;
-    cbp->next = virt_to_bus(cbp + 1);
+    cbp->next = virt_to_phys(cbp + 1);
     ++cbp;
   }
 
   // point to the first
   --cbp;
-  cbp->next = virt_to_bus(ctl->cb);
+  cbp->next = virt_to_phys(ctl->cb);
 }
 
 void init_hardware(void) {
 
-  struct ctl *ctl = (struct ctl *)ctl_addr;
+  struct ctl *ctl = ctl_addr;
 
   // Initialize PWM
   write_reg_and_wait(pwm_reg, PWM_CTL, 0, 10);
@@ -318,7 +346,7 @@ inline uint32_t create_clear_mask(unsigned int sample) {
 
 void debug_dump_ctrl(void) {
 
-  struct ctl *ctl = (struct ctl *)ctl_addr;
+  struct ctl *ctl = ctl_addr;
   int i;
   struct dma_cb *cbp = ctl->cb;
 
@@ -354,7 +382,7 @@ void debug_dump_ctrl(void) {
 }
 
 void debug_dump_samples(void) {
-  struct ctl *ctl = (struct ctl *)ctl_addr;
+  struct ctl *ctl = ctl_addr;
   int i;
 
   for (i = 0; i < NUM_SAMPLES; ++i) {
