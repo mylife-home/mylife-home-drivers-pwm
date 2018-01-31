@@ -294,9 +294,13 @@ void init_hardware(void) {
   // Initialize PWM
   write_reg_and_wait(pwm_reg, PWM_CTL, 0, 10);
   write_reg_and_wait(pwm_reg, PWM_STA, read_reg(pwm_reg, PWM_STA), 10);
+
+  write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000000, 100);
+  write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000, 100);
   write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000006, 100); // Source=PLLD (500MHz)
   write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000 | (500<<12), 100); // set pwm div to 500, giving 1MHz
   write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000016, 100); // Source=PLLD and enable
+
   write_reg_and_wait(pwm_reg, PWM_RNG1, SAMPLE_US, 10);
   write_reg_and_wait(pwm_reg, PWM_DMAC, PWMDMAC_ENAB | PWMDMAC_THRSHLD, 10);
   write_reg_and_wait(pwm_reg, PWM_CTL, PWMCTL_CLRF, 10);
