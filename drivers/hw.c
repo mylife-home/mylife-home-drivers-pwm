@@ -3,6 +3,7 @@
 // http://www.valvers.com/wp-content/uploads/2013/01/arm-c-virtual-addresses.jpg
 // https://www.kernel.org/doc/gorman/html/understand/understand009.html
 // https://stackoverflow.com/questions/38760947/ioremapped-address-in-kernel
+// https://github.com/Wallacoloo/Raspberry-Pi-DMA-Example/blob/master/dma-gpio.c
 
 #include <linux/kernel.h>
 #include <linux/gpio.h>
@@ -33,7 +34,7 @@ enum delay_type {
   DELAY_PWM
 };
 
-static enum delay_type delay_type = DELAY_PCM;
+static enum delay_type delay_type = DELAY_PWM;
 
 struct dma_cb {
   uint32_t info;
@@ -63,20 +64,33 @@ struct ctl {
 #define PWM_RNG1           0x10
 #define PWM_FIFO           0x18
 
+#define PWM_CTL_PWEN1        (1<<0)
+#define PWM_CTL_MODE1        (1<<1)
+#define PWM_CTL_REPEATEMPTY1 (1<<2)
+#define PWM_CTL_USEF1        (1<<5)
+#define PWM_CTL_CLRF         (1<<6)
+#define PWM_DMAC_ENAB        (1<<31)
+#define PWM_DMAC_THRSHLD     ((15<<8) | (15<<0))
+#define PWM_STA_BUSERR       (1<<8)
+#define PWM_STA_GAPERRS      (0xf << 4)
+#define PWM_STA_FIFOREADERR  (1<<3)
+#define PWM_STA_FIFOWRITEERR (1<<2)
+#define PWM_STA_ERRS         (PWM_STA_BUSERR | PWM_STA_GAPERRS | PWM_STA_FIFOREADERR | PWM_STA_FIFOWRITEERR)
+
 #define PCM_OFFSET         0x00203000
 #define PCM_LEN            0x24
 #define PCM_PHYS_BASE      (IO_PHYS_BASE + PCM_OFFSET)
 #define PCM_BUS_BASE       (IO_BUS_BASE  + PCM_OFFSET)
 
-#define PCM_CS_A            0x00
-#define PCM_FIFO_A          0x04
-#define PCM_MODE_A          0x08
-#define PCM_RXC_A           0x0c
-#define PCM_TXC_A           0x10
-#define PCM_DREQ_A          0x14
-#define PCM_INTEN_A         0x18
-#define PCM_INT_STC_A       0x1c
-#define PCM_GRAY            0x20
+#define PCM_CS_A           0x00
+#define PCM_FIFO_A         0x04
+#define PCM_MODE_A         0x08
+#define PCM_RXC_A          0x0c
+#define PCM_TXC_A          0x10
+#define PCM_DREQ_A         0x14
+#define PCM_INTEN_A        0x18
+#define PCM_INT_STC_A      0x1c
+#define PCM_GRAY           0x20
 
 #define CLK_OFFSET         0x00101000
 #define CLK_LEN            0xA8
@@ -87,13 +101,6 @@ struct ctl {
 #define PCMCLK_DIV         39
 #define PWMCLK_CNTL        40
 #define PWMCLK_DIV         41
-
-#define PWMCTL_MODE1       (1<<1)
-#define PWMCTL_PWEN1       (1<<0)
-#define PWMCTL_CLRF        (1<<6)
-#define PWMCTL_USEF1       (1<<5)
-#define PWMDMAC_ENAB       (1<<31)
-#define PWMDMAC_THRSHLD    ((15<<8) | (15<<0))
 
 #define GPIO_OFFSET        0x00200000
 #define GPIO_LEN           0x100
@@ -387,16 +394,20 @@ void init_hardware(void) {
   case DELAY_PWM:
     // Initialize PWM
     write_reg_and_wait(pwm_reg, PWM_CTL, 0, 10);
-    write_reg_and_wait(pwm_reg, PWM_STA, read_reg(pwm_reg, PWM_STA), 10);
 
     write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000006, 100); // Source=PLLD (500MHz)
     write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000 | (500<<12), 100); // set pwm div to 500, giving 1MHz
     write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000016, 100); // Source=PLLD and enable
 
+    write_reg(pwm_reg, PWM_DMAC, 0); //disable DMA
+    or_reg_and_wait(pwm_reg,  PWM_CTL, PWM_CTL_CLRF, 100); //clear pwm
+    write_reg_and_wait(pwm_reg, PWM_STA, PWM_STA_ERRS, 100); //clear PWM errors
+
+    pwmHeader->CTL = PWM_CTL_REPEATEMPTY1 | PWM_CTL_ENABLE1 | PWM_CTL_USEFIFO1;
+
+    write_reg_and_wait(pwm_reg, PWM_DMAC, PWM_DMAC_ENAB | PWM_DMAC_THRSHLD, 10);
     write_reg_and_wait(pwm_reg, PWM_RNG1, SAMPLE_US, 10);
-    write_reg_and_wait(pwm_reg, PWM_DMAC, PWMDMAC_ENAB | PWMDMAC_THRSHLD, 10);
-    write_reg_and_wait(pwm_reg, PWM_CTL, PWMCTL_CLRF, 10);
-    write_reg_and_wait(pwm_reg, PWM_CTL, PWMCTL_USEF1 | PWMCTL_PWEN1, 10);
+    write_reg_and_wait(pwm_reg, PWM_CTL, PWM_CTL_USEF1 | PWM_CTL_PWEN1 | PWM_CTL_REPEATEMPTY1, 10);
     break;
   }
 
