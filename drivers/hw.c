@@ -212,13 +212,13 @@ int hw_init(void) {
 
 #undef CHECK_MEM
 
-  printk(KERN_INFO "ctl_addr: %p\n", ctl_addr);
-  printk(KERN_INFO "virt_to_bus(ctl_addr): %p\n", (void *)virt_to_bus(ctl_addr));
-  printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
-
   init_ctrl_data();
   init_hardware();
   hw_update(0);
+
+  printk(KERN_INFO "ctl_addr: %p\n", ctl_addr);
+  printk(KERN_INFO "virt_to_bus(ctl_addr): %p\n", (void *)virt_to_bus(ctl_addr));
+  printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
 
   return 0;
 }
