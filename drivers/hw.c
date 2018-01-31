@@ -159,7 +159,8 @@ void memory_cleanup(void) {
 }
 
 inline uint32_t virt_to_bus(const void *addr) {
-  return virt_to_phys(addr) | 0xC0000000;
+  uint32_t offset = (uint8_t *)addr - (uint8_t *)ctl_addr;
+  return ctl_bus_addr + offset;
 }
 
 inline uint32_t bus_to_phys(uint32_t bus_addr) {
