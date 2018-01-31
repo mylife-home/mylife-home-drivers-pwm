@@ -494,13 +494,13 @@ void hw_dump_dmacb(void) {
   struct dma_cb *cbp = ctl->cb;
 
   for (i = 0; i < NUM_SAMPLES * 2; i++) {
-    printf("DMA Control Block: #%d @0x%px, bus=0x%08x\n", i, cbp, virt_to_bus(cbp));
-    printf("info:   0x%08x\n", cbp->info);
-    printf("src:    0x%08x\n", cbp->src);
-    printf("dst:    0x%08x\n", cbp->dst);
-    printf("length: 0x%08x\n", cbp->length);
-    printf("stride: 0x%08x\n", cbp->stride);
-    printf("next:   0x%08x\n", cbp->next);
+    printk(KERN_INFO "DMA Control Block: #%d @0x%px, bus=0x%08x\n", i, cbp, virt_to_bus(cbp));
+    printk(KERN_INFO "info:   0x%08x\n", cbp->info);
+    printk(KERN_INFO "src:    0x%08x\n", cbp->src);
+    printk(KERN_INFO "dst:    0x%08x\n", cbp->dst);
+    printk(KERN_INFO "length: 0x%08x\n", cbp->length);
+    printk(KERN_INFO "stride: 0x%08x\n", cbp->stride);
+    printk(KERN_INFO "next:   0x%08x\n", cbp->next);
     cbp++; // next control block
   }
 }
