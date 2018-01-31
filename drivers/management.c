@@ -24,7 +24,7 @@ static ssize_t attr_show_locked(struct device *dev, struct device_attribute *att
 static ssize_t attr_store_locked(struct device *dev, struct device_attribute *attr, const char *buf, size_t size);
 static ssize_t export_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
 static ssize_t unexport_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
-static ssize_t delay_type_show(struct device *dev, struct class_attribute *attr, char *buf);
+static ssize_t delay_type_show(struct class *class, struct class_attribute *attr, char *buf);
 static ssize_t debug_dump_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
 
 static int mod_init(void);
@@ -183,7 +183,7 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
   return len;
 }
 
-ssize_t delay_type_show(struct device *dev, struct class_attribute *attr, char *buf) {
+ssize_t delay_type_show(struct class *class, struct class_attribute *attr, char *buf) {
   switch(delay_type) {
   case DELAY_PCM:
     return strscpy(buf, "pcm\n", PAGE_SIZE);
