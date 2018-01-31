@@ -374,13 +374,6 @@ void init_hardware(void) {
 
   struct ctl *ctl = ctl_addr;
 
-  // Initialize the DMA
-  write_reg_and_wait(dma_reg, DMA_CHAN_OFFSET + DMA_CS, DMA_RESET, 10);
-  write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CS, DMA_INT | DMA_END);
-  write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CONBLK_AD, virt_to_bus(ctl->cb));
-  write_reg_and_wait(dma_reg, DMA_CHAN_OFFSET + DMA_DEBUG, 7, 10); // clear debug error flags
-  write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CS, 0x10880001); // go, mid priority, wait for outstanding writes
-
   switch(delay_type) {
   case DELAY_PCM:
     // Initialize PCM
@@ -413,6 +406,13 @@ void init_hardware(void) {
     write_reg_and_wait(pwm_reg, PWM_CTL, PWM_CTL_USEF1 | PWM_CTL_PWEN1 | PWM_CTL_REPEATEMPTY1, 10);
     break;
   }
+
+  // Initialize the DMA
+  write_reg_and_wait(dma_reg, DMA_CHAN_OFFSET + DMA_CS, DMA_RESET, 10);
+  write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CS, DMA_INT | DMA_END);
+  write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CONBLK_AD, virt_to_bus(ctl->cb));
+  write_reg_and_wait(dma_reg, DMA_CHAN_OFFSET + DMA_DEBUG, 7, 10); // clear debug error flags
+  write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CS, 0x10880001); // go, mid priority, wait for outstanding writes
 
   if(delay_type == DELAY_PCM) {
     or_reg(pcm_reg, PCM_CS_A, 1<<2); // Enable Tx
