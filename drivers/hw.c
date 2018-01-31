@@ -28,6 +28,13 @@
 #define NUM_SAMPLES   (CYCLE_TIME_US / SAMPLE_US)
 #define NUM_CBS       (NUM_SAMPLES * 2)
 
+enum delay_type {
+  DELAY_PCM,
+  DELAY_PWM
+};
+
+static enum delay_type delay_type = DELAY_PCM;
+
 struct dma_cb {
   uint32_t info;
   uint32_t src;
@@ -56,13 +63,31 @@ struct ctl {
 #define PWM_RNG1           0x10
 #define PWM_FIFO           0x18
 
+#define PCM_OFFSET         0x00203000
+#define PCM_LEN            0x24
+#define PCM_PHYS_BASE      (IO_PHYS_BASE + PCM_OFFSET)
+#define PCM_BUS_BASE       (IO_BUS_BASE  + PCM_OFFSET)
+
+#define PCM_CS_A            0x00
+#define PCM_FIFO_A          0x04
+#define PCM_MODE_A          0x08
+#define PCM_RXC_A           0x0c
+#define PCM_TXC_A           0x10
+#define PCM_DREQ_A          0x14
+#define PCM_INTEN_A         0x18
+#define PCM_INT_STC_A       0x1c
+#define PCM_GRAY            0x20
+
 #define CLK_OFFSET         0x00101000
 #define CLK_LEN            0xA8
 #define CLK_PHYS_BASE      (IO_PHYS_BASE + CLK_OFFSET)
 #define CLK_BUS_BASE       (IO_BUS_BASE  + CLK_OFFSET)
 
+#define PCMCLK_CNTL        38
+#define PCMCLK_DIV         39
 #define PWMCLK_CNTL        40
 #define PWMCLK_DIV         41
+
 #define PWMCTL_MODE1       (1<<1)
 #define PWMCTL_PWEN1       (1<<0)
 #define PWMCTL_CLRF        (1<<6)
@@ -106,6 +131,7 @@ static uint32_t ctl_phys_addr;
 static void *dma_reg;
 static void *clk_reg;
 static void *pwm_reg;
+static void *pcm_reg;
 
 static void memory_cleanup(void);
 static uint32_t virt_to_bus(const void *addr);
@@ -113,6 +139,8 @@ static uint32_t bus_to_phys(uint32_t bus_addr);
 static uint32_t read_reg(volatile void *reg_base_addr, uint32_t reg_offset);
 static void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value);
 static void write_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value, unsigned long usecs);
+static void or_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value);
+static void or_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value, unsigned long usecs);
 static void init_ctrl_data(void);
 static void init_hardware(void);
 static uint32_t create_set_mask(void);
@@ -147,6 +175,11 @@ void memory_cleanup(void) {
     pwm_reg = NULL;
   }
 
+  if(pcm_reg) {
+    memunmap(pcm_reg);
+    pcm_reg = NULL;
+  }
+
   if(clk_reg) {
     memunmap(clk_reg);
     clk_reg = NULL;
@@ -174,8 +207,19 @@ inline void write_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_
   * ((volatile uint32_t *)addr) = value;
 }
 
-void write_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value, unsigned long usecs) {
+inline void write_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value, unsigned long usecs) {
   write_reg(reg_base_addr, reg_offset, value);
+  udelay(usecs);
+}
+
+inline void or_reg(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value) {
+  volatile char *addr = reg_base_addr;
+  addr += reg_offset;
+  * ((volatile uint32_t *)addr) |= value;
+}
+
+inline void or_reg_and_wait(volatile void *reg_base_addr, uint32_t reg_offset, uint32_t value, unsigned long usecs) {
+  or_reg(reg_base_addr, reg_offset, value);
   udelay(usecs);
 }
 
@@ -187,6 +231,7 @@ int hw_init(void) {
   ctl_bus_addr = 0;
   dma_reg = NULL;
   pwm_reg = NULL;
+  pcm_reg = NULL;
   clk_reg = NULL;
 
   printk(KERN_INFO "DMA Channel:   %5d\n", DMA_CHAN_NUM);
@@ -211,6 +256,16 @@ int hw_init(void) {
   CHECK_MEM(clk_reg = memremap(CLK_PHYS_BASE, CLK_LEN, MEMREMAP_WT));
   CHECK_MEM(ctl_addr = memremap(ctl_phys_addr, NUM_PAGES * PAGE_SIZE, MEMREMAP_WB));
 
+  switch(delay_type) {
+  case DELAY_PCM:
+    CHECK_MEM(pcm_reg = memremap(PCM_PHYS_BASE, PCM_LEN, MEMREMAP_WT));
+    break;
+
+  case DELAY_PWM:
+    CHECK_MEM(pwm_reg = memremap(PWM_PHYS_BASE, PWM_LEN, MEMREMAP_WT));
+    break;
+  }
+
 #undef CHECK_MEM
 
   init_ctrl_data();
@@ -223,7 +278,16 @@ int hw_init(void) {
 void hw_exit(void) {
 
   write_reg_and_wait(dma_reg, DMA_CHAN_OFFSET + DMA_CS, DMA_RESET, 10);
-  write_reg_and_wait(pwm_reg, PWM_CTL, 0, 10);
+
+  switch(delay_type) {
+  case DELAY_PCM:
+    write_reg_and_wait(pcm_reg, PCM_CS_A, 0, 100); // Disable PCM block
+    break;
+
+  case DELAY_PWM:
+    write_reg_and_wait(pwm_reg, PWM_CTL, 0, 10);
+    break;
+  }
 
   memory_cleanup();
 }
@@ -274,7 +338,18 @@ void init_ctrl_data(void) {
     ++cbp;
 
     // Second DMA command
-    cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP | DMA_D_DREQ | DMA_PER_MAP(5);
+    switch(delay_type) {
+    case DELAY_PCM:
+      cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP | DMA_D_DREQ | DMA_PER_MAP(2);
+      cbp->dst = PCM_BUS_BASE + PCM_FIFO_A;
+      break;
+
+    case DELAY_PWM:
+      cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP | DMA_D_DREQ | DMA_PER_MAP(5);
+      cbp->dst = PWM_BUS_BASE + PWM_FIFO;
+      break;
+    }
+
     cbp->src = virt_to_bus(ctl); // Any data will do
     cbp->dst = PWM_BUS_BASE + PWM_FIFO;
     cbp->length = sizeof(uint32_t);
@@ -292,26 +367,38 @@ void init_hardware(void) {
 
   struct ctl *ctl = ctl_addr;
 
-  // Initialize PWM
-  write_reg_and_wait(pwm_reg, PWM_CTL, 0, 10);
-  write_reg_and_wait(pwm_reg, PWM_STA, read_reg(pwm_reg, PWM_STA), 10);
 
-  //write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000000, 100);
-  //write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000, 100);
-  //write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000006, 100); // Source=PLLD (500MHz)
-  //write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000 | (500<<12), 100); // set pwm div to 500, giving 1MHz
-  //write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000016, 100); // Source=PLLD and enable
+  switch(delay_type) {
+  case DELAY_PCM:
+    // Initialize PCM
+    write_reg_and_wait(pcm_reg, PCM_CS_A, 1, 100); // Disable Rx+Tx, Enable PCM block
 
-  write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000000, 100);
-  write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000, 100);
-  write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000001, 100);              // Source=osc
-  write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000 | (32<<12), 500);    // set pwm div to 32 (19.2MHz/32 = 600KHz)
-  write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000011, 100);              // Source=osc and enable
+    write_reg_and_wait(clk_reg[PCMCLK_CNTL] = 0x5A000006, 100); // Source=PLLD (500MHz)
+    write_reg_and_wait(clk_reg[PCMCLK_DIV] = 0x5A000000 | (500<<12), 100); // Set pcm div to 500, giving 1MHz
+    write_reg_and_wait(clk_reg[PCMCLK_CNTL] = 0x5A000016, 100); // Source=PLLD and enable
 
-  write_reg_and_wait(pwm_reg, PWM_RNG1, SAMPLE_US, 10);
-  write_reg_and_wait(pwm_reg, PWM_DMAC, PWMDMAC_ENAB | PWMDMAC_THRSHLD, 10);
-  write_reg_and_wait(pwm_reg, PWM_CTL, PWMCTL_CLRF, 10);
-  write_reg_and_wait(pwm_reg, PWM_CTL, PWMCTL_USEF1 | PWMCTL_PWEN1, 10);
+    write_reg_and_wait(pcm_reg, PCM_TXC_A, 0<<31 | 1<<30 | 0<<20 | 0<<16, 100); // 1 channel, 8 bits
+    write_reg_and_wait(pcm_reg, PCM_MODE_A, (SAMPLE_US - 1) << 10, 100);
+    or_reg_and_wait(pcm_reg, PCM_CS_A, 1<<4 | 1<<3, 100); // Clear FIFOs
+    write_reg_and_wait(pcm_reg, PCM_DREQ_A, 64<<24 | 64<<8, 100); // DMA Req when one slot is free?
+    or_reg_and_wait(pcm_reg, PCM_CS_A, 1<<9, 100); // Enable DMA
+    break;
+
+  case DELAY_PWM:
+    // Initialize PWM
+    write_reg_and_wait(pwm_reg, PWM_CTL, 0, 10);
+    write_reg_and_wait(pwm_reg, PWM_STA, read_reg(pwm_reg, PWM_STA), 10);
+
+    write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000006, 100); // Source=PLLD (500MHz)
+    write_reg_and_wait(clk_reg, PWMCLK_DIV, 0x5A000000 | (500<<12), 100); // set pwm div to 500, giving 1MHz
+    write_reg_and_wait(clk_reg, PWMCLK_CNTL, 0x5A000016, 100); // Source=PLLD and enable
+
+    write_reg_and_wait(pwm_reg, PWM_RNG1, SAMPLE_US, 10);
+    write_reg_and_wait(pwm_reg, PWM_DMAC, PWMDMAC_ENAB | PWMDMAC_THRSHLD, 10);
+    write_reg_and_wait(pwm_reg, PWM_CTL, PWMCTL_CLRF, 10);
+    write_reg_and_wait(pwm_reg, PWM_CTL, PWMCTL_USEF1 | PWMCTL_PWEN1, 10);
+    break;
+  }
 
   // Initialize the DMA
   write_reg_and_wait(dma_reg, DMA_CHAN_OFFSET + DMA_CS, DMA_RESET, 10);
@@ -319,6 +406,10 @@ void init_hardware(void) {
   write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CONBLK_AD, virt_to_bus(ctl->cb));
   write_reg_and_wait(dma_reg, DMA_CHAN_OFFSET + DMA_DEBUG, 7, 10); // clear debug error flags
   write_reg(dma_reg, DMA_CHAN_OFFSET + DMA_CS, 0x10880001); // go, mid priority, wait for outstanding writes
+
+  if(delay_type == DELAY_PCM) {
+    or_reg(pcm_reg, PCM_CS_A, 1<<2); // Enable Tx
+  }
 }
 
 inline uint32_t create_set_mask(void) {
@@ -377,9 +468,20 @@ void debug_dump_ctrl(void) {
   printk(KERN_INFO "ctl: %p\n", ctl);
   printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
 
-  printk(KERN_INFO "pwm_reg: %p\n", pwm_reg);
-  for (i=0; i<PWM_LEN/4; ++i) {
-    printk(KERN_INFO "%04x: 0x%08x\n", i * 4, ((uint32_t*)pwm_reg)[i]);
+  switch(delay_type) {
+  case DELAY_PCM:
+    printk(KERN_INFO "pcm_reg: %p\n", pcm_reg);
+    for (i=0; i<PCM_LEN/4; ++i) {
+      printk(KERN_INFO "%04x: 0x%08x\n", i * 4, ((uint32_t*)pcm_reg)[i]);
+    }
+    break;
+
+  case DELAY_PWM:
+    printk(KERN_INFO "pwm_reg: %p\n", pwm_reg);
+    for (i=0; i<PWM_LEN/4; ++i) {
+      printk(KERN_INFO "%04x: 0x%08x\n", i * 4, ((uint32_t*)pwm_reg)[i]);
+    }
+    break;
   }
 
   printk(KERN_INFO "clk_reg: %p\n", clk_reg);
