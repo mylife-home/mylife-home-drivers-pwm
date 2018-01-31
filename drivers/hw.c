@@ -104,7 +104,6 @@ static void *dma_reg;
 static void *clk_reg;
 static void *pwm_reg;
 
-static unsigned int get_page_order(unsigned int page_count);
 static void memory_cleanup(void);
 static uint32_t virt_to_bus(const void *addr);
 static uint32_t bus_to_phys(uint32_t bus_addr);
@@ -116,14 +115,6 @@ static uint32_t create_set_mask(void);
 static uint32_t create_clear_mask(unsigned int sample);
 static void debug_dump_ctrl(void);
 static void debug_dump_samples(void);
-
-inline unsigned int get_page_order(unsigned int page_count) {
-  unsigned int order = 0;
-  while(1 << order < page_count) {
-    ++order;
-  }
-  return order;
-}
 
 void memory_cleanup(void) {
 
@@ -364,7 +355,7 @@ void debug_dump_ctrl(void) {
   printk(KERN_INFO "ctl: %p\n", ctl);
   printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
 
-  for (i = 0; i < 4; ++i) {
+  for (i = 990; i < NUM; ++i) {
     printk(KERN_INFO "DMA Control Block: #%d @%p, \n", i, cbp);
     printk(KERN_INFO "info:   0x%08x\n", cbp->info);
     printk(KERN_INFO "src:    0x%08x\n", cbp->src);
