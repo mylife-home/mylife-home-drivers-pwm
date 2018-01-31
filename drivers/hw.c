@@ -212,6 +212,10 @@ int hw_init(void) {
 
 #undef CHECK_MEM
 
+  printk(KERN_INFO "ctl: %p\n", ctl);
+  printk(KERN_INFO "virt_to_bus(ctl): %p\n", (void *)virt_to_bus(ctl));
+  printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
+
   init_ctrl_data();
   init_hardware();
   hw_update(0);
@@ -246,7 +250,7 @@ void hw_update(int wait) {
     mdelay(CYCLE_TIME_US / 1000);
   }
 
-  debug_dump_ctrl();
+  //debug_dump_ctrl();
   //debug_dump_samples();
 }
 
