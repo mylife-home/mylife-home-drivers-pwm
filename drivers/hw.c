@@ -380,6 +380,9 @@ void debug_dump_ctrl(void) {
     ++cbp; // next control block
   }
 
+  printk(KERN_INFO "dma_reg current cb: 0x%08x\n", ((char*)dma_reg + DMA_CHAN_OFFSET + DMA_CONBLK_AD));
+
+/*
   printk(KERN_INFO "pwm_reg: %p\n", pwm_reg);
   for (i=0; i<PWM_LEN/4; ++i) {
     printk(KERN_INFO "%04x: 0x%08x\n", i * 4, ((uint32_t*)pwm_reg)[i]);
@@ -394,6 +397,7 @@ void debug_dump_ctrl(void) {
   for (i=0; i<DMA_CHAN_SIZE/4; ++i) {
     printk(KERN_INFO "%04x: 0x%08x\n", i * 4, ((uint32_t*)((char*)dma_reg + DMA_CHAN_OFFSET))[i]);
   }
+*/
 }
 
 void debug_dump_samples(void) {
