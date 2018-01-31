@@ -358,23 +358,6 @@ void debug_dump_ctrl(void) {
   printk(KERN_INFO "ctl: %p\n", ctl);
   printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
 
-//  for (i = 0; i < 20; ++i) {
-//    printk(KERN_INFO "DMA Control Block: #%d @%p bus @%08x next @%08x, \n", i, cbp, virt_to_bus(cbp), cbp->next);
-//    printk(KERN_INFO "info:   0x%08x\n", cbp->info);
-//    printk(KERN_INFO "src:    0x%08x\n", cbp->src);
-//    printk(KERN_INFO "dst:    0x%08x\n", cbp->dst);
-//    printk(KERN_INFO "length: 0x%08x\n", cbp->length);
-//    printk(KERN_INFO "stride: 0x%08x\n", cbp->stride);
-//    printk(KERN_INFO "next:   0x%08x\n", cbp->next);
-//    ++cbp; // next control block
-//  }
-
-  printk(KERN_INFO "DMA Control Block #0 : 0x%08x", virt_to_bus(cbp));
-  printk(KERN_INFO "DMA Control Block #1999 : 0x%08x", virt_to_bus(cbp + 1999));
-
-  printk(KERN_INFO "dma_reg current cb: 0x%08x\n", ((uint32_t*)((char*)dma_reg + DMA_CHAN_OFFSET + DMA_CONBLK_AD))[0]);
-
-/*
   printk(KERN_INFO "pwm_reg: %p\n", pwm_reg);
   for (i=0; i<PWM_LEN/4; ++i) {
     printk(KERN_INFO "%04x: 0x%08x\n", i * 4, ((uint32_t*)pwm_reg)[i]);
@@ -389,7 +372,6 @@ void debug_dump_ctrl(void) {
   for (i=0; i<DMA_CHAN_SIZE/4; ++i) {
     printk(KERN_INFO "%04x: 0x%08x\n", i * 4, ((uint32_t*)((char*)dma_reg + DMA_CHAN_OFFSET))[i]);
   }
-*/
 }
 
 void debug_dump_samples(void) {
