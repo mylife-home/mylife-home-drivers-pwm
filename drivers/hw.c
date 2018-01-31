@@ -278,7 +278,7 @@ void init_ctrl_data(void) {
 
 
   // FIXME
-  ctl->cb[1000].next = virt_to_bus(ctl->cb);;
+  ctl->cb[10].next = virt_to_bus(ctl->cb);;
 }
 
 void init_hardware(void) {
@@ -359,7 +359,7 @@ void debug_dump_ctrl(void) {
   printk(KERN_INFO "ctl: %p\n", ctl);
   printk(KERN_INFO "ctl_bus_addr: %p\n", (void *)ctl_bus_addr);
 
-  for (i = 990; i < 1100; ++i) {
+  for (i = 0; i < 20; ++i) {
     printk(KERN_INFO "DMA Control Block: #%d @%p bus @%08x next @%08x, \n", i, cbp, virt_to_bus(cbp), cbp->next);
 //    printk(KERN_INFO "info:   0x%08x\n", cbp->info);
 //    printk(KERN_INFO "src:    0x%08x\n", cbp->src);
