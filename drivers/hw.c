@@ -223,6 +223,7 @@ int hw_init(void) {
 void hw_exit(void) {
 
   write_reg_and_wait(dma_reg, DMA_CHAN_OFFSET + DMA_CS, DMA_RESET, 10);
+  write_reg_and_wait(pwm_reg, PWM_CTL, 0, 10);
 
   memory_cleanup();
 }
