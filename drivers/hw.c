@@ -265,16 +265,6 @@ void init_ctrl_data(void) {
     cbp->next = virt_to_bus(cbp + 1);
     ++cbp;
 
-
-    // First DMA command
-    cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP;
-    cbp->src = virt_to_bus(ctl->sample + sample);
-    cbp->dst = GPIO_BUS_BASE + GPCLR0;
-    cbp->length = sizeof(uint32_t);
-    cbp->stride = 0;
-    cbp->next = virt_to_bus(cbp + 1);
-    ++cbp;
-    /*
     // Second DMA command
     cbp->info = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP | DMA_D_DREQ | DMA_PER_MAP(5);
     cbp->src = virt_to_bus(ctl); // Any data will do
@@ -283,7 +273,6 @@ void init_ctrl_data(void) {
     cbp->stride = 0;
     cbp->next = virt_to_bus(cbp + 1);
     ++cbp;
-    */
   }
 
   // point to the first
